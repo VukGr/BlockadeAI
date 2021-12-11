@@ -11,6 +11,7 @@ P2 = 'O'
 
 WIDTH = 20
 HEIGHT = 10
+Z = 21323123
 
 class Game:
     v_walls = []
