@@ -9,11 +9,15 @@ MID = '┼'
 P1 = 'X'
 P2 = 'O'
 
-# WIDTH = 20
-# HEIGHT = 10
+WIDTH = 20
+HEIGHT = 10
+Z = 21323123
+marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 class Game:
+    def __init__(self, ) -> None:
+        pass
     v_walls = []
     h_walls = []
 
@@ -25,7 +29,7 @@ class Game:
         self.width = int(width)
         self.height = int(height)
         self.x_pos = list(touple(X1), touple(X2))
-        self.o_pos = list(touple(O1), touple(O2))1
+        self.o_pos = list(touple(O1), touple(O2))
         self.numOdWallsPerUser = int(numOdWallsPerUser)
         self.v_walls = [[] for _ in range(self.width * 2)]
         self.h_walls = [[] for _ in range(self.height)]
@@ -75,7 +79,6 @@ class Game:
 
     def draw(self):
         interior = self.interior()
-        marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         # 12356...H
         # namesta poziciju za 12356...H, tj pomera ga za 3 da se preklopi
         print(" ", end=" ")
@@ -126,6 +129,9 @@ class Game:
             self.v_walls[posY+1].append(posX)
             self.v_walls[posY+1].sort()
 
+    def parseMove():
+        inputString = input("")
+
 
 width = input('Enter width:')
 height = input('Enter height:')
@@ -137,5 +143,4 @@ numOdWallsPerUser = input('Enter number of walls per user:')
 # x_pos = [(0, 0), (1, 1)]
 # o_pos = [(10, 10), (8, 8)]
 g = Game(width, height, X1, X2, O1, O2, numOdWallsPerUser)
-g.draw()
 g.draw()
