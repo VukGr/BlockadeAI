@@ -12,7 +12,7 @@ P2 = 'O'
 WIDTH = 20
 HEIGHT = 10
 Z = 21323123
-
+marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class Game:
     def __init__(self, ) -> None:
@@ -73,7 +73,6 @@ class Game:
 
     def draw(self):
         interior = self.interior()
-        marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         # 12356...H
         # namesta poziciju za 12356...H, tj pomera ga za 3 da se preklopi
         print(" ", end=" ")
@@ -134,5 +133,4 @@ def parseState(startStateString):
 print("Please type initial parameters in format:\nwidth|height|P11x,P11y|P12x,P12y|P21x, P21y|P12x,P12y|numOdWallsPerUser")
 startStateString = str(input())
 g = Game(WIDTH, HEIGHT)
-g.draw()
 g.draw()
