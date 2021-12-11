@@ -67,7 +67,7 @@ class Game:
                         print(MID,end="")
             yield
 
-    def drawTerminal(self):
+    def draw(self):
         interior = self.interior()
         marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         # 12356...H    
@@ -126,6 +126,7 @@ g.placeVerticalWall(1, 1)
 g.placeVerticalWall(1, 3)
 interior = g.interior()
 
-for _ in range(HEIGHT*2):
-    next(interior)
-    print()
+#for _ in range(HEIGHT*2):
+#    next(interior)
+#    print()
+g.draw()
