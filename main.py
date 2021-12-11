@@ -22,7 +22,9 @@ class Game:
         self.width = width
         self.height = height
         self.x_pos = [X1, X2]
+        self.x_start = self.x_pos
         self.o_pos = [O1, O2]
+        self.o_start = self.o_pos
         self.numOdWallsPerUser = int(numOdWallsPerUser)
         self.v_walls = [[] for _ in range(self.width * 2)]
         self.h_walls = [[] for _ in range(self.height)]
