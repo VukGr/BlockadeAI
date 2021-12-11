@@ -11,12 +11,8 @@ P2 = 'O'
 
 WIDTH = 20
 HEIGHT = 10
-Z = 21323123
-
 
 class Game:
-    def __init__(self, ) -> None:
-        pass
     v_walls = []
     h_walls = []
 
