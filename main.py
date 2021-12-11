@@ -123,7 +123,7 @@ class Game:
             self.v_walls[posY+1].sort()
 
 
-# testcomsds
+# tdestcomsdss
 def parseState(startStateString):
     elements = startStateString.split("|")
     return Game()
