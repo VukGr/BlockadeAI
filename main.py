@@ -120,13 +120,4 @@ class Game:
 
 
 g = Game(WIDTH, HEIGHT)
-g.placeHorizontalWall(1, 3)
-g.placeHorizontalWall(1, 1)
-g.placeVerticalWall(1, 1)
-g.placeVerticalWall(1, 3)
-interior = g.interior()
-
-#for _ in range(HEIGHT*2):
-#    next(interior)
-#    print()
 g.draw()
