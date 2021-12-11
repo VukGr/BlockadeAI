@@ -106,6 +106,7 @@ class Game:
         for y in range(WIDTH-1):
             print('═', end="╩")  # stampa ══════════════════ za donji deo
         print('═', end="╝")  # desni cosak
+        print()
 
     def placeHorizontalWall(self, posY, posX):
         if(posX < WIDTH-1 and posX not in self.h_walls[posY]):
@@ -129,13 +130,5 @@ def parseState(startStateString):
 print("Please type initial parameters in format:\nwidth|height|P11x,P11y|P12x,P12y|P21x, P21y|P12x,P12y|numOdWallsPerUser")
 startStateString = str(input())
 g = Game(WIDTH, HEIGHT)
-g.placeHorizontalWall(1, 3)
-g.placeHorizontalWall(1, 1)
-g.placeVerticalWall(1, 1)
-g.placeVerticalWall(1, 3)
-interior = g.interior()
-
-# for _ in range(HEIGHT*2):
-#    next(interior)
-#    print()
+g.draw()
 g.draw()
