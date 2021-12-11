@@ -13,20 +13,23 @@ WIDTH = 20
 HEIGHT = 10
 Z = 21323123
 
+
 class Game:
+    def __init__(self, ) -> None:
+        pass
     v_walls = []
     h_walls = []
 
-    x_pos = {(0,0), (1,1)}
-    o_pos = {(10,10), (8,8)}
+    x_pos = {(0, 0), (1, 1)}
+    o_pos = {(10, 10), (8, 8)}
 
     def __init__(self, w, h):
         self.v_walls = [[] for _ in range(w * 2)]
         self.h_walls = [[] for _ in range(h)]
 
-        self.v_walls[0] = [0,2,4]
-        self.v_walls[1] = [0,2,4]
-        self.h_walls[0] = [0,3]
+        self.v_walls[0] = [0, 2, 4]
+        self.v_walls[1] = [0, 2, 4]
+        self.h_walls[0] = [0, 3]
         pass
 
     def interior(self):
@@ -35,9 +38,9 @@ class Game:
             # Vert zidovi i igraci
             for x in range(WIDTH):
                 # Igraci
-                if (x,y) in self.x_pos:
+                if (x, y) in self.x_pos:
                     print(P1, end="")
-                elif (x,y) in self.o_pos:
+                elif (x, y) in self.o_pos:
                     print(P2, end="")
                 else:
                     print(" ", end="")
@@ -65,47 +68,48 @@ class Game:
                         else:
                             print(HEMPTY, end="")
                     if(x != WIDTH-1):
-                        print(MID,end="")
+                        print(MID, end="")
             yield
 
     def draw(self):
         interior = self.interior()
         marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        # 12356...H    
-        print(" ", end=" ") # namesta poziciju za 12356...H, tj pomera ga za 3 da se preklopi
+        # 12356...H
+        # namesta poziciju za 12356...H, tj pomera ga za 3 da se preklopi
+        print(" ", end=" ")
         for y in range(WIDTH):
-                print(marks[y], end = " ") # stampa ══════════════════ za gornji deo
-        print() # prelazak u newline zbog ovo iznad
+            print(marks[y], end=" ")  # stampa ══════════════════ za gornji deo
+        print()  # prelazak u newline zbog ovo iznad
 
-        #╔══╗
-        print(" ╔", end="") # levi cosak
+        # ╔══╗
+        print(" ╔", end="")  # levi cosak
         for y in range(WIDTH-1):
-            print( '═', end="╦") 
-        print("═", end="╗") # desni cosak
+            print('═', end="╦")
+        print("═", end="╗")  # desni cosak
 
-        # 12356...H + ║ + matrica + ║ 
+        # 12356...H + ║ + matrica + ║
         pom = 0
         for x in range(HEIGHT*2-1):
-            print() # spusta u novu liniju jer koristimo svuda end=
-            if ( x % 2 == 0):
+            print()  # spusta u novu liniju jer koristimo svuda end=
+            if (x % 2 == 0):
                 print(marks[x-pom], end="")
-                print( '║', end="")
+                print('║', end="")
                 pom += 1
             else:
                 print(' ', end="")
-                print( '╠', end="")
+                print('╠', end="")
             next(interior)
-            if ( x % 2 == 0):
-                print( '║', end="")
+            if (x % 2 == 0):
+                print('║', end="")
             else:
-                print( '╣', end="")
+                print('╣', end="")
 
-        #╚══╝
-        print() # spusta u novu liniju jer koristimo svuda end=
-        print(" ╚", end="") # levi cosak 
+        # ╚══╝
+        print()  # spusta u novu liniju jer koristimo svuda end=
+        print(" ╚", end="")  # levi cosak
         for y in range(WIDTH-1):
-            print( '═', end="╩") # stampa ══════════════════ za donji deo
-        print( '═', end="╝") # desni cosak
+            print('═', end="╩")  # stampa ══════════════════ za donji deo
+        print('═', end="╝")  # desni cosak
 
     def placeHorizontalWall(self, posY, posX):
         if(posX < WIDTH-1 and posX not in self.h_walls[posY]):
@@ -120,6 +124,14 @@ class Game:
             self.v_walls[posY+1].sort()
 
 
+# tdestcomsdss
+def parseState(startStateString):
+    elements = startStateString.split("|")
+    return Game()
+
+
+print("Please type initial parameters in format:\nwidth|height|P11x,P11y|P12x,P12y|P21x, P21y|P12x,P12y|numOdWallsPerUser")
+startStateString = str(input())
 g = Game(WIDTH, HEIGHT)
 g.placeHorizontalWall(1, 3)
 g.placeHorizontalWall(1, 1)
@@ -127,7 +139,7 @@ g.placeVerticalWall(1, 1)
 g.placeVerticalWall(1, 3)
 interior = g.interior()
 
-#for _ in range(HEIGHT*2):
+# for _ in range(HEIGHT*2):
 #    next(interior)
 #    print()
 g.draw()
