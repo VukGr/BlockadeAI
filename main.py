@@ -17,14 +17,6 @@ marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
 class Game:
-    def __init__(self, ) -> None:
-        pass
-    v_walls = []
-    h_walls = []
-
-    # x_pos = [(0, 0), (1, 1)]
-    # o_pos = [(10, 10), (8, 8)]
-
     def __init__(self, width, height, X1, X2, O1, O2, numOdWallsPerUser):
 
         self.width = int(width)
