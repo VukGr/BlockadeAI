@@ -19,10 +19,10 @@ marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 class Game:
     def __init__(self, width, height, X1, X2, O1, O2, numOdWallsPerUser):
 
-        self.width = int(width)
-        self.height = int(height)
-        self.x_pos = [make_tuple(X1), make_tuple(X2)]
-        self.o_pos = [make_tuple(O1), make_tuple(O2)]
+        self.width = width
+        self.height = height
+        self.x_pos = [X1, X2]
+        self.o_pos = [O1, O2]
         self.numOdWallsPerUser = int(numOdWallsPerUser)
         self.v_walls = [[] for _ in range(self.width * 2)]
         self.h_walls = [[] for _ in range(self.height)]
@@ -127,16 +127,16 @@ class Game:
 
 
 def makeGame():
-    width = input('Enter width:')
-    height = input('Enter height:')
-    X1 = input('Enter player X1 coordinates (x, y):')
-    X2 = input('Enter player X2 coordinates (x, y):')
-    O1 = input('Enter player O1 coordinates (x, y):')
-    O2 = input('Enter player O2 coordinates (x, y):')
+    width = int(input('Enter width:'))
+    height = int(input('Enter height:'))
+    X1x, X1y = make_tuple(input('Enter player X1 coordinates (x, y):'))
+    X2x, X2y = make_touple(input('Enter player X2 coordinates (x, y):'))
+    O1x, O1y = make_touple(input('Enter player O1 coordinates (x, y):'))
+    O2x, O2y = make_touple(input('Enter player O2 coordinates (x, y):'))
     numOdWallsPerUser = input('Enter number of walls per user:')
-    return Game(width, height, X1, X2, O1, O2, numOdWallsPerUser)
+    return Game(width, height, (X1x-1, X1y-1), (X2x-1, X2y-1), (O1x-1, O1y-1), (O2x-1, O2y-1), numOdWallsPerUser)
 
 
 # g = makeGame()
-g = Game(20, 10, "0, 0", "1, 1", "10, 10", "8, 8", 9)
+g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9)
 g.draw()
