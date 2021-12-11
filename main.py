@@ -123,6 +123,9 @@ class Game:
             self.v_walls[posY+1].append(posX)
             self.v_walls[posY+1].sort()
 
+    def parseMove():
+        inputString = input("")
+
 
 # tdestcomsdss
 def parseState(startStateString):
