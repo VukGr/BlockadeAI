@@ -1,4 +1,5 @@
 from collections import deque
+from ast import literal_eval as make_tuple
 
 HZID = '═'
 VZID = '║'
@@ -28,8 +29,8 @@ class Game:
 
         self.width = int(width)
         self.height = int(height)
-        self.x_pos = list(touple(X1), touple(X2))
-        self.o_pos = list(touple(O1), touple(O2))
+        self.x_pos = [make_tuple(X1), make_tuple(X2)]
+        self.o_pos = [make_tuple(O1), make_tuple(O2)]
         self.numOdWallsPerUser = int(numOdWallsPerUser)
         self.v_walls = [[] for _ in range(self.width * 2)]
         self.h_walls = [[] for _ in range(self.height)]
@@ -133,14 +134,17 @@ class Game:
         inputString = input("")
 
 
-width = input('Enter width:')
-height = input('Enter height:')
-X1 = input('Enter player X1 coordinates (x, y):')
-X2 = input('Enter player X2 coordinates (x, y):')
-O1 = input('Enter player O1 coordinates (x, y):')
-O2 = input('Enter player O2 coordinates (x, y):')
-numOdWallsPerUser = input('Enter number of walls per user:')
-# x_pos = [(0, 0), (1, 1)]
-# o_pos = [(10, 10), (8, 8)]
-g = Game(width, height, X1, X2, O1, O2, numOdWallsPerUser)
+def makeGame():
+    width = input('Enter width:')
+    height = input('Enter height:')
+    X1 = input('Enter player X1 coordinates (x, y):')
+    X2 = input('Enter player X2 coordinates (x, y):')
+    O1 = input('Enter player O1 coordinates (x, y):')
+    O2 = input('Enter player O2 coordinates (x, y):')
+    numOdWallsPerUser = input('Enter number of walls per user:')
+    return Game(width, height, X1, X2, O1, O2, numOdWallsPerUser)
+
+
+# g = makeGame()
+g = Game(20, 10, "0, 0", "1, 1", "10, 10", "8, 8", 9)
 g.draw()
