@@ -123,17 +123,46 @@ class Game:
             self.v_walls[posY+1].append(posX)
             self.v_walls[posY+1].sort()
 
-    def parseMove():
-        inputString = input("")
+    def parseMove(self):
+        while True:
+            showError = ""
+            inputString = input("Player PlayerNumber PositionX PositionY WallColor WX WY: ")
+            arrayString = inputString.split()
+            
+            #Player
+            if (arrayString[0] != "O" and arrayString[0] != 'X'):
+                showError += "Player: " + arrayString[0] + " doesn't exist. Enter (X/O)\n"
+            
+            #Player Number
+            if (int(arrayString[1]) > 4 or int(arrayString[1]) <= 0):
+                showError += "PlayerNumber: " + arrayString[1] + " doesn't exist. Enter (1/2/3/4)\n"
+            
+            #Position X
+            if (marks.find(arrayString[2]) > WIDTH or marks.find(arrayString[2]) <= 0):
+                showError += "PositionX: " + arrayString[2] + " doesn't exist. Enter between 1 and " + str(WIDTH) + "\n"
+            
+            #Position Y
+            if (marks.find(arrayString[3]) > HEIGHT or marks.find(arrayString[3]) <= 0):
+                showError += "PositionY: " + arrayString[3] + " doesn't exist. Enter between 1 and " + str(HEIGHT) + "\n"
+            
+            #Wall Color
+            if (arrayString[4] != "Z" and arrayString[4] != 'P'):
+                showError += "WallColor: " + arrayString[4] + " doesn't exist. Enter between Z or P\n"
 
+            #WX
+            if (marks.find(arrayString[5]) > WIDTH - 1 or marks.find(arrayString[5]) <= 0):
+                showError += "WX: " + arrayString[5] + " doesn't exist. Enter between 1 and " + str(WIDTH) + "\n"
 
-# tdestcomsdss
-def parseState(startStateString):
-    elements = startStateString.split("|")
-    return Game()
+            #WY
+            if (marks.find(arrayString[6]) > HEIGHT - 1 or marks.find(arrayString[6]) <= 0):
+                showError += "WY: " + arrayString[6] + " doesn't exist. Enter between 1 and " + str(HEIGHT) + "\n"
 
+            if (showError == ""):
+                check = False
+                return ((arrayString[0], int(arrayString[1])), (marks.find(arrayString[2]), marks.find(arrayString[3])), (arrayString[4], marks.find(arrayString[5]), marks.find(arrayString[6])))
+            else:
+                print(showError)
 
-print("Please type initial parameters in format:\nwidth|height|P11x,P11y|P12x,P12y|P21x, P21y|P12x,P12y|numOdWallsPerUser")
-startStateString = str(input())
 g = Game(WIDTH, HEIGHT)
 g.draw()
+print(g.parseMove())
