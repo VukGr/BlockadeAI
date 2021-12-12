@@ -11,7 +11,8 @@ MID = '┼'
 P1 = 'X'
 P2 = 'O'
 
-marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+#marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 def sign(x):
     if x == 0:
@@ -174,25 +175,40 @@ class Game:
         return x >= 0 and y >= 0 and x < self.width and y < self.height
 
     def is_move_valid(self, pos, move):
-        x, y = pos
-        dx, dy = move
-        sign_x, sign_y = sign(dx), sign(dy)
+        def horizontal_check():
+            if dx != 0:
+                return all(all(wall != step_x
+                               for step_x in range(start_x, start_x+dx, sign_dx))
+                           for wall in self.v_walls[py])
+            else:
+                return True
+        def vertical_check():
+            if dy != 0:
+                return all(all(wall != px and wall+1 != px
+                               for wall in self.h_walls[step_y])
+                           for step_y in range(start_y, start_y+dy, sign_dy))
+            else:
+                return True
 
-        if not self.in_bounds((x+dx, y+dy)):
+        px, py = pos
+        dx, dy = move
+        sign_dx, sign_dy = sign(dx), sign(dy)
+
+        start_x = (px - 1 if sign_dx == -1
+                   else px)
+        start_y = (py - 1 if sign_dy == -1
+                   else py)
+
+        if not self.in_bounds((px+dx, py+dy)):
             return False
 
-        if sign(dx) == -1:
-            x -= 1
-        if sign(dy) == -1:
-            y -= 1
 
-        if move in [(+2, 0), (-2, 0)]:
-            return all([wall != x and wall != x + (1*sign_x) for wall in self.v_walls[y]])
-        elif move in [(0, +2), (0, -2)]:
-            return all([wall != x and wall+1 != x for wall in self.h_walls[y]] +
-                       [wall != x and wall+1 != x for wall in self.h_walls[y+(1*sign_y)]])
+        if move in [(+2, 0), (-2, 0), (0, +2), (0, -2)]:
+            print([horizontal_check(), vertical_check()])
+            return all([horizontal_check(),
+                        vertical_check()])
         elif move in [(+1, +1), (-1, +1), (+1, -1), (-1, -1)]:
-            pass
+            return all([wall != px for wall in self.v_walls[py]])
         return False
 
     def make_move(self, move):
