@@ -197,6 +197,13 @@ class Game:
                            for step_y in range(start_y, start_y+dy, sign(dy)))
             else:
                 return True
+
+        def diagonal_check(pos, dx, dy):
+            #print([horizontal_check(pos, dx) and vertical_check(pos + (dx,0), dy), 
+            #       vertical_check(pos, dy) and horizontal_check(pos + (0, dy), dx)])
+            return any([horizontal_check(pos, dx) and vertical_check(pos + (dx,0), dy),
+                        vertical_check(pos, dy) and horizontal_check(pos + (0, dy), dx)])
+
         # Convert to Point if normal tuple was passed, for debugging
         pos = Point(*pos)
         move = Point(*move)
@@ -204,13 +211,16 @@ class Game:
 
         if not self.in_bounds(pos + move):
             return False
+        if (pos+move) in self.o_pos + self.x_pos:
+            return False
 
-        if move in [(+2, 0), (-2, 0), (0, +2), (0, -2)]:
+        if move in {(+2, 0), (-2, 0), (0, +2), (0, -2)}:
             return all([horizontal_check(pos, dx),
                         vertical_check(pos, dy)])
-        elif move in [(+1, +1), (-1, +1), (+1, -1), (-1, -1)]:
-            pass
-        return False
+        elif move in {(+1, +1), (-1, +1), (+1, -1), (-1, -1)}:
+            return diagonal_check(pos, dx, dy)
+        else:
+            return False
 
     def make_move(self, move):
         pass
