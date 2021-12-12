@@ -2,6 +2,7 @@ from collections import deque, namedtuple
 # https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
 from ast import literal_eval as make_tuple
 
+DEBUG = True
 
 HZID = '═'
 VZID = '║'
@@ -11,9 +12,12 @@ MID = '┼'
 
 P1 = 'X'
 P2 = 'O'
+START1 = 'x'
+START2 = 'o'
 
-#marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+if DEBUG:
+    marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Point = namedtuple('Point', 'x y')
 Point.__add__ = lambda a,b: Point(a.x+b[0], a.x+b[1]) # type: ignore
@@ -28,17 +32,20 @@ class Game:
     def __init__(self, width, height, X1, X2, O1, O2, wall_count):
         self.width = width
         self.height = height
-        self.x_pos = [X1, X2]
-        self.x_start = self.x_pos
-        self.o_pos = [O1, O2]
-        self.o_start = self.o_pos
+        self.x_pos = [Point(*X1), Point(*X2)]
+        self.x_start = self.x_pos.copy()
+        self.o_pos = [Point(*O1), Point(*O2)]
+        self.o_start = self.o_pos.copy()
         self.wall_count = int(wall_count)
-        self.v_walls = [[] for _ in range(self.width * 2)]
+        self.v_walls = [[] for _ in range(self.width)]
         self.h_walls = [[] for _ in range(self.height)]
+        self.playing = 'X'
 
-        self.v_walls[0] = [0, 2, 4]
-        self.v_walls[1] = [0, 2, 4]
-        self.h_walls[0] = [0, 3]
+        if DEBUG:
+            self.v_walls[0] = [0, 2, 4]
+            self.v_walls[1] = [0, 2, 4]
+            self.h_walls[0] = [0, 3]
+            self.v_walls[self.height-1] = [2]
 
     def interior(self):
         for y in range(self.height):
@@ -50,6 +57,10 @@ class Game:
                     print(P1, end="")
                 elif (x, y) in self.o_pos:
                     print(P2, end="")
+                elif (x, y) in self.x_start:
+                    print(START1, end="")
+                elif (x, y) in self.o_start:
+                    print(START2, end="")
                 else:
                     print(" ", end="")
                 # Vert zidovi
@@ -85,7 +96,7 @@ class Game:
         # namesta poziciju za 12356...H, tj pomera ga za 3 da se preklopi
         print(" ", end=" ")
         for y in range(self.width):
-            print(marks[y], end=" ")  # stampa ══════════════════ za gornji deo
+            print(marks[y], end=" ")  # stampa ═ za gornji deo
         print()  # prelazak u newline zbog ovo iznad
 
         # ╔══╗
@@ -115,7 +126,7 @@ class Game:
         print()  # spusta u novu liniju jer koristimo svuda end=
         print(" ╚", end="")  # levi cosak
         for y in range(self.width-1):
-            print('═', end="╩")  # stampa ══════════════════ za donji deo
+            print('═', end="╩")  # stampa ═ za donji deo
         print('═', end="╝")  # desni cosak
         print()
 
@@ -199,8 +210,6 @@ class Game:
                 return True
 
         def diagonal_check(pos, dx, dy):
-            #print([horizontal_check(pos, dx) and vertical_check(pos + (dx,0), dy), 
-            #       vertical_check(pos, dy) and horizontal_check(pos + (0, dy), dx)])
             return any([horizontal_check(pos, dx) and vertical_check(pos + (dx,0), dy),
                         vertical_check(pos, dy) and horizontal_check(pos + (0, dy), dx)])
 
@@ -222,9 +231,19 @@ class Game:
         else:
             return False
 
-    def make_move(self, move):
-        pass
-
+    def move_piece(self, piece, new_position):
+        player_pos = self.x_pos if self.playing == 'X' else self.o_pos
+        piece_pos = Point(*player_pos[piece])
+        new_position = Point(*new_position)
+        print(piece_pos, piece_pos-new_position)
+        if self.is_move_valid(piece_pos, new_position-piece_pos):
+            player_pos[piece] = new_position
+            self.playing = 'O' if self.playing == 'X' else 'X'
+            self.draw() # Privremeno
+            return True
+        else:
+            print("Invalid move")
+            return False
 
 def makeGame():
     width = int(input('Enter width:'))
