@@ -2,8 +2,6 @@ from collections import deque, namedtuple
 # https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
 from ast import literal_eval as make_tuple
 
-DEBUG = True
-
 HZID = '═'
 VZID = '║'
 HEMPTY = '─'
@@ -16,8 +14,6 @@ START1 = 'x'
 START2 = 'o'
 
 marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-if DEBUG:
-    marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Point = namedtuple('Point', 'x y')
 Point.__add__ = lambda a,b: Point(a.x+b[0], a.y+b[1]) # type: ignore
@@ -47,12 +43,6 @@ class Game:
         self.h_walls = [[] for _ in range(self.height)]
         self.playing = 'X'
         self.human_player = human_player
-
-        if DEBUG:
-            self.v_walls[0] = [0, 2, 4]
-            self.v_walls[1] = [0, 2, 4]
-            self.h_walls[0] = [0, 3]
-            self.v_walls[self.height-1] = [2]
 
     def interior(self):
         for y in range(self.height):
@@ -296,7 +286,5 @@ def makeGame():
     player = input('Are you playing as X or O:')
     return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count, player)
 
-#g = makeGame()
-g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
+g = makeGame()
 g.draw()
-#print(g.parseMove())
