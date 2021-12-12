@@ -20,7 +20,7 @@ if DEBUG:
     marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Point = namedtuple('Point', 'x y')
-Point.__add__ = lambda a,b: Point(a.x+b[0], a.x+b[1]) # type: ignore
+Point.__add__ = lambda a,b: Point(a.x+b[0], a.y+b[1]) # type: ignore
 Point.__sub__ = lambda a,b: Point(a.x-b[0], a.y-b[1]) # type: ignore
 
 def sign(x):
@@ -29,17 +29,24 @@ def sign(x):
     return 1 if x > 0 else -1
 
 class Game:
-    def __init__(self, width, height, X1, X2, O1, O2, wall_count):
+    def __init__(self, width, height, X1, X2, O1, O2, wall_count_per_player, humanPlayer):
+        if width > 22:
+            raise Exception("Max width is 22.")
+        if height > 28:
+            raise Exception("Max height is 28.")
+        if wall_count_per_player > 18:
+            raise Exception("Max wall count per player is 18")
         self.width = width
         self.height = height
         self.x_pos = [Point(*X1), Point(*X2)]
         self.x_start = self.x_pos.copy()
         self.o_pos = [Point(*O1), Point(*O2)]
         self.o_start = self.o_pos.copy()
-        self.wall_count = int(wall_count)
+        self.wall_count = wall_count_per_player * 2
         self.v_walls = [[] for _ in range(self.width)]
         self.h_walls = [[] for _ in range(self.height)]
         self.playing = 'X'
+        self.humanPlayer = humanPlayer
 
         if DEBUG:
             self.v_walls[0] = [0, 2, 4]
@@ -50,9 +57,9 @@ class Game:
     def interior(self):
         for y in range(self.height):
             v_wall_row = deque(self.v_walls[y])
-            # Vert zidovi i igraci
+            # Vert zidovi i igraci/startne pozicije
             for x in range(self.width):
-                # Igraci
+                # Igraci i startne pozicije
                 if (x, y) in self.x_pos:
                     print(P1, end="")
                 elif (x, y) in self.o_pos:
@@ -131,16 +138,22 @@ class Game:
         print()
 
     def placeHorizontalWall(self, posY, posX):
-        if(posX < self.width-1 and posX not in self.h_walls[posY]):
-            self.h_walls[posY].append(posX)
-            self.h_walls[posY].sort()
+        if posX > 0 and posY > 0 and posX < self.height - 1 and posY < self.width - 1:
+            if posX < self.width-1 and posX not in self.h_walls[posY]:
+                self.h_walls[posY].append(posX)
+                self.h_walls[posY].sort()
+                return True
+        return False
 
     def placeVerticalWall(self, posY, posX):
-        if(posY < self.height-1 and posX not in self.v_walls[posY]):
-            self.v_walls[posY].append(posX)
-            self.v_walls[posY].sort()
-            self.v_walls[posY+1].append(posX)
-            self.v_walls[posY+1].sort()
+        if posX > 0 and posY > 0 and posX < self.height - 1 and posY < self.width - 1:
+            if posY < self.height-1 and posX not in self.v_walls[posY]:
+                self.v_walls[posY].append(posX)
+                self.v_walls[posY].sort()
+                self.v_walls[posY+1].append(posX)
+                self.v_walls[posY+1].sort()
+                return True
+        return False
 
     def parseMove(self):
         while True:
@@ -149,36 +162,35 @@ class Game:
             arrayString = inputString.split()
 
             #Player
-            if (arrayString[0] != "O" and arrayString[0] != 'X'):
+            if (arrayString[0] in ['X', 'O']):
                 showError += "Player: " + arrayString[0] + " doesn't exist. Enter (X/O)\n"
 
-            #Player Number
-            if (int(arrayString[1]) > 4 or int(arrayString[1]) <= 0):
-                showError += "PlayerNumber: " + arrayString[1] + " doesn't exist. Enter (1/2/3/4)\n"
+            #Piece Number
+            if (int(arrayString[1]) in [1, 2]):
+                showError += "PieceNumber: " + arrayString[1] + " doesn't exist. Enter (1/2/3/4)\n"
 
             #Position X
-            if (marks.find(arrayString[2]) > self.width or marks.find(arrayString[2]) <= 0):
+            if (marks.find(arrayString[2]) > self.width or marks.find(arrayString[2]) < 0):
                 showError += "PositionX: " + arrayString[2] + " doesn't exist. Enter between 1 and " + str(self.width) + "\n"
 
             #Position Y
-            if (marks.find(arrayString[3]) > self.height or marks.find(arrayString[3]) <= 0):
+            if (marks.find(arrayString[3]) > self.height or marks.find(arrayString[3]) < 0):
                 showError += "PositionY: " + arrayString[3] + " doesn't exist. Enter between 1 and " + str(self.height) + "\n"
 
             #Wall Color
-            if (arrayString[4] != "Z" and arrayString[4] != 'P'):
+            if (arrayString[4] in ['Z', 'P']):
                 showError += "WallColor: " + arrayString[4] + " doesn't exist. Enter between Z or P\n"
 
             #WX
-            if (marks.find(arrayString[5]) > self.width - 1 or marks.find(arrayString[5]) <= 0):
+            if (marks.find(arrayString[5]) > self.width - 1 or marks.find(arrayString[5]) < 0):
                 showError += "WX: " + arrayString[5] + " doesn't exist. Enter between 1 and " + str(self.width) + "\n"
 
             #WY
-            if (marks.find(arrayString[6]) > self.height - 1 or marks.find(arrayString[6]) <= 0):
+            if (marks.find(arrayString[6]) > self.height - 1 or marks.find(arrayString[6]) < 0):
                 showError += "WY: " + arrayString[6] + " doesn't exist. Enter between 1 and " + str(self.height) + "\n"
 
             if (showError == ""):
-                check = False
-                return ((arrayString[0], int(arrayString[1])), (marks.find(arrayString[2]), marks.find(arrayString[3])), (arrayString[4], marks.find(arrayString[5]), marks.find(arrayString[6])))
+                return ((arrayString[0], int(arrayString[1])), Point(marks.find(arrayString[2]), marks.find(arrayString[3])), (arrayString[4], Point(marks.find(arrayString[5]), marks.find(arrayString[6]))))
             else:
                 print(showError)
 
@@ -235,7 +247,7 @@ class Game:
         player_pos = self.x_pos if self.playing == 'X' else self.o_pos
         piece_pos = Point(*player_pos[piece])
         new_position = Point(*new_position)
-        print(piece_pos, piece_pos-new_position)
+
         if self.is_move_valid(piece_pos, new_position-piece_pos):
             player_pos[piece] = new_position
             self.playing = 'O' if self.playing == 'X' else 'X'
@@ -245,6 +257,38 @@ class Game:
             print("Invalid move")
             return False
 
+    def make_move(self, player_info, pos, wall):
+        player, piece = player_info
+        pos = Point(*pos)
+        wall_type, wall_pos = wall
+        wall_pos = Point(*wall_pos)
+
+        if player != self.playing:
+            print("Wrong player")
+            return False
+
+        if self.move_piece(piece, pos):
+            if self.wall_count > 0:
+                if wall_type == 'Z':
+                    g.placeVerticalWall(*wall_pos)
+                elif wall_type == 'P':
+                    g.placeHorizontalWall(*wall_pos)
+                else:
+                    print("Invalid wall position")
+                    return False
+                self.wall_count -= 1
+            return True
+        else:
+            print("Invalid movement position")
+            return False
+
+    def is_game_finished(self):
+        if any(x_piece in self.o_start for x_piece in self.x_pos):
+            return +1
+        if any(x_piece in self.o_start for x_piece in self.x_pos):
+            return -1
+        return 0
+
 def makeGame():
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
@@ -252,10 +296,11 @@ def makeGame():
     X2 = make_tuple(input('Enter player X2 coordinates (x, y):'))
     O1 = make_tuple(input('Enter player O1 coordinates (x, y):'))
     O2 = make_tuple(input('Enter player O2 coordinates (x, y):'))
-    wall_count = input('Enter number of walls per user:')
-    return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count)
+    wall_count = int(input('Enter number of walls per user:'))
+    player = input('Are you playing as X or O:')
+    return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count, player)
 
 #g = makeGame()
-g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9)
+g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
 g.draw()
 #print(g.parseMove())
