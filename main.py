@@ -1,6 +1,7 @@
-from collections import deque
-#https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
+from collections import deque, namedtuple
+# https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
 from ast import literal_eval as make_tuple
+
 
 HZID = '═'
 VZID = '║'
@@ -14,24 +15,24 @@ P2 = 'O'
 #marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+Point = namedtuple('Point', 'x y')
+Point.__add__ = lambda a,b: Point(a.x+b[0], a.x+b[1]) # type: ignore
+Point.__sub__ = lambda a,b: Point(a.x-b[0], a.y-b[1]) # type: ignore
+
 def sign(x):
     if x == 0:
         return 0
     return 1 if x > 0 else -1
 
-#https://stackoverflow.com/questions/497885/python-element-wise-tuple-operations-like-sum
-def add_tuple(a, b):
-    tuple(map(sum, zip(a, b)))
-
 class Game:
-    def __init__(self, width, height, X1, X2, O1, O2, numOdWallsPerUser):
+    def __init__(self, width, height, X1, X2, O1, O2, wall_count):
         self.width = width
         self.height = height
         self.x_pos = [X1, X2]
         self.x_start = self.x_pos
         self.o_pos = [O1, O2]
         self.o_start = self.o_pos
-        self.numOdWallsPerUser = int(numOdWallsPerUser)
+        self.wall_count = int(wall_count)
         self.v_walls = [[] for _ in range(self.width * 2)]
         self.h_walls = [[] for _ in range(self.height)]
 
@@ -175,40 +176,40 @@ class Game:
         return x >= 0 and y >= 0 and x < self.width and y < self.height
 
     def is_move_valid(self, pos, move):
-        def horizontal_check():
+        # start_* is pos_* minus one in case of negative numbers
+        # So we can check left/upper walls instead of right/lower
+        # ones respectively
+        def horizontal_check(pos, dx):
             if dx != 0:
+                start_x = (pos.x - 1 if sign(dx) == -1
+                           else pos.x)
                 return all(all(wall != step_x
-                               for step_x in range(start_x, start_x+dx, sign_dx))
-                           for wall in self.v_walls[py])
+                               for step_x in range(start_x, start_x+dx, sign(dx)))
+                           for wall in self.v_walls[pos.y])
             else:
                 return True
-        def vertical_check():
+        def vertical_check(pos, dy):
             if dy != 0:
-                return all(all(wall != px and wall+1 != px
+                start_y = (pos.y - 1 if sign(dy) == -1
+                           else pos.y)
+                return all(all(wall != pos.x and wall+1 != pos.x
                                for wall in self.h_walls[step_y])
-                           for step_y in range(start_y, start_y+dy, sign_dy))
+                           for step_y in range(start_y, start_y+dy, sign(dy)))
             else:
                 return True
-
-        px, py = pos
+        # Convert to Point if normal tuple was passed, for debugging
+        pos = Point(*pos)
+        move = Point(*move)
         dx, dy = move
-        sign_dx, sign_dy = sign(dx), sign(dy)
 
-        start_x = (px - 1 if sign_dx == -1
-                   else px)
-        start_y = (py - 1 if sign_dy == -1
-                   else py)
-
-        if not self.in_bounds((px+dx, py+dy)):
+        if not self.in_bounds(pos + move):
             return False
 
-
         if move in [(+2, 0), (-2, 0), (0, +2), (0, -2)]:
-            print([horizontal_check(), vertical_check()])
-            return all([horizontal_check(),
-                        vertical_check()])
+            return all([horizontal_check(pos, dx),
+                        vertical_check(pos, dy)])
         elif move in [(+1, +1), (-1, +1), (+1, -1), (-1, -1)]:
-            return all([wall != px for wall in self.v_walls[py]])
+            pass
         return False
 
     def make_move(self, move):
@@ -218,12 +219,12 @@ class Game:
 def makeGame():
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
-    X1x, X1y = make_tuple(input('Enter player X1 coordinates (x, y):'))
-    X2x, X2y = make_tuple(input('Enter player X2 coordinates (x, y):'))
-    O1x, O1y = make_tuple(input('Enter player O1 coordinates (x, y):'))
-    O2x, O2y = make_tuple(input('Enter player O2 coordinates (x, y):'))
-    numOdWallsPerUser = input('Enter number of walls per user:')
-    return Game(width, height, (X1x-1, X1y-1), (X2x-1, X2y-1), (O1x-1, O1y-1), (O2x-1, O2y-1), numOdWallsPerUser)
+    X1 = make_tuple(input('Enter player X1 coordinates (x, y):'))
+    X2 = make_tuple(input('Enter player X2 coordinates (x, y):'))
+    O1 = make_tuple(input('Enter player O1 coordinates (x, y):'))
+    O2 = make_tuple(input('Enter player O2 coordinates (x, y):'))
+    wall_count = input('Enter number of walls per user:')
+    return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count)
 
 #g = makeGame()
 g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9)
