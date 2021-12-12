@@ -1,4 +1,5 @@
 from collections import deque
+#https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
 from ast import literal_eval as make_tuple
 
 HZID = '═'
@@ -12,10 +13,17 @@ P2 = 'O'
 
 marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
+def sign(x):
+    if x == 0:
+        return 0
+    return 1 if x > 0 else -1
+
+#https://stackoverflow.com/questions/497885/python-element-wise-tuple-operations-like-sum
+def add_tuple(a, b):
+    tuple(map(sum, zip(a, b)))
 
 class Game:
     def __init__(self, width, height, X1, X2, O1, O2, numOdWallsPerUser):
-
         self.width = width
         self.height = height
         self.x_pos = [X1, X2]
@@ -126,23 +134,23 @@ class Game:
             showError = ""
             inputString = input("Player PlayerNumber PositionX PositionY WallColor WX WY: ")
             arrayString = inputString.split()
-            
+
             #Player
             if (arrayString[0] != "O" and arrayString[0] != 'X'):
                 showError += "Player: " + arrayString[0] + " doesn't exist. Enter (X/O)\n"
-            
+
             #Player Number
             if (int(arrayString[1]) > 4 or int(arrayString[1]) <= 0):
                 showError += "PlayerNumber: " + arrayString[1] + " doesn't exist. Enter (1/2/3/4)\n"
-            
+
             #Position X
             if (marks.find(arrayString[2]) > self.width or marks.find(arrayString[2]) <= 0):
                 showError += "PositionX: " + arrayString[2] + " doesn't exist. Enter between 1 and " + str(self.width) + "\n"
-            
+
             #Position Y
             if (marks.find(arrayString[3]) > self.height or marks.find(arrayString[3]) <= 0):
                 showError += "PositionY: " + arrayString[3] + " doesn't exist. Enter between 1 and " + str(self.height) + "\n"
-            
+
             #Wall Color
             if (arrayString[4] != "Z" and arrayString[4] != 'P'):
                 showError += "WallColor: " + arrayString[4] + " doesn't exist. Enter between Z or P\n"
@@ -161,6 +169,36 @@ class Game:
             else:
                 print(showError)
 
+    def in_bounds(self, pos):
+        x, y = pos
+        return x >= 0 and y >= 0 and x < self.width and y < self.height
+
+    def is_move_valid(self, pos, move):
+        x, y = pos
+        dx, dy = move
+        sign_x, sign_y = sign(dx), sign(dy)
+
+        if not self.in_bounds((x+dx, y+dy)):
+            return False
+
+        if sign(dx) == -1:
+            x -= 1
+        if sign(dy) == -1:
+            y -= 1
+
+        if move in [(+2, 0), (-2, 0)]:
+            return all([wall != x and wall != x + (1*sign_x) for wall in self.v_walls[y]])
+        elif move in [(0, +2), (0, -2)]:
+            return all([wall != x and wall+1 != x for wall in self.h_walls[y]] +
+                       [wall != x and wall+1 != x for wall in self.h_walls[y+(1*sign_y)]])
+        elif move in [(+1, +1), (-1, +1), (+1, -1), (-1, -1)]:
+            pass
+        return False
+
+    def make_move(self, move):
+        pass
+
+
 def makeGame():
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
@@ -174,4 +212,4 @@ def makeGame():
 #g = makeGame()
 g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9)
 g.draw()
-print(g.parseMove())
+#print(g.parseMove())
