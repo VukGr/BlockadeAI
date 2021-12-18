@@ -1,4 +1,5 @@
 from collections import deque, namedtuple
+import re
 # https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
 from ast import literal_eval as make_tuple
 
@@ -35,7 +36,7 @@ class Game:
         if height > 28:
             raise Exception("Max height is 28.")
         if wall_count_per_player > 18:
-            raise Exception("Max wall count per player is 18")
+            raise Exception("Max wall count per player is 18.")
         self.width = width
         self.height = height
         self.x_pos = [Point(*X1), Point(*X2)]
@@ -137,61 +138,53 @@ class Game:
         print('═', end="╝")  # desni cosak
         print()
 
-    def placeWall(self, wallType, posY, posX):
+    def placeWall(self, wallType, pos):
+        pos = Point(*pos)
+        if not self.inBounds(pos):
+            return False
         if wallType == 'P':
-            if posX > 0 and posY > 0 and posX < self.height - 1 and posY < self.width - 1:
-                if posX < self.width-1 and posX not in self.h_walls[posY]:
-                    self.h_walls[posY].append(posX)
-                    self.h_walls[posY].sort()
-                    return True
+            if pos.x < self.width-2 and pos.x not in self.h_walls[pos.y] and pos.x+1 not in self.h_walls[pos.y]:
+                self.h_walls[pos.y].append(pos.x)
+                self.h_walls[pos.y].sort()
+                return True
         if wallType == 'Z':
-            if posX > 0 and posY > 0 and posX < self.height - 1 and posY < self.width - 1:
-                if posY < self.height-1 and posX not in self.v_walls[posY]:
-                    self.v_walls[posY].append(posX)
-                    self.v_walls[posY].sort()
-                    self.v_walls[posY+1].append(posX)
-                    self.v_walls[posY+1].sort()
-                    return True
+            if pos.y < self.height-2 and pos.x not in self.v_walls[pos.y] and pos.x not in self.v_walls[pos.y+1]:
+                self.v_walls[pos.y].append(pos.x)
+                self.v_walls[pos.y].sort()
+                self.v_walls[pos.y+1].append(pos.x)
+                self.v_walls[pos.y+1].sort()
+                return True
         return False
 
     def parseMove(self):
         while True:
-            showError = ""
-            inputString = input("Player PlayerNumber PositionX PositionY WallColor WX WY: ")
-            arrayString = inputString.split()
+            inputString = input("Potez: ")
+            playerInfo, moveInfo, wallInfo = [x for x in re.findall(r'\[([^\]])\]', inputString)]
 
-            #Player
-            if (arrayString[0] in ['X', 'O']):
-                showError += "Player: " + arrayString[0] + " doesn't exist. Enter (X/O)\n"
+            player, piece = playerInfo.split()
+            moveX, moveY = moveInfo.split()
+            wallType, wallX, wallY = wallInfo.split()
 
-            #Piece Number
-            if (int(arrayString[1]) in [1, 2]):
-                showError += "PieceNumber: " + arrayString[1] + " doesn't exist. Enter (1/2/3/4)\n"
+            piece = int(piece)
+            movePos = Point(marks.find(moveX), marks.find(moveY))
+            wallPos = Point(marks.find(wallX), marks.find(wallY))
 
-            #Position X
-            if (marks.find(arrayString[2]) > self.width or marks.find(arrayString[2]) < 0):
-                showError += "PositionX: " + arrayString[2] + " doesn't exist. Enter between 1 and " + str(self.width) + "\n"
-
-            #Position Y
-            if (marks.find(arrayString[3]) > self.height or marks.find(arrayString[3]) < 0):
-                showError += "PositionY: " + arrayString[3] + " doesn't exist. Enter between 1 and " + str(self.height) + "\n"
-
-            #Wall Color
-            if (arrayString[4] in ['Z', 'P']):
-                showError += "WallColor: " + arrayString[4] + " doesn't exist. Enter between Z or P\n"
-
-            #WX
-            if (marks.find(arrayString[5]) > self.width - 1 or marks.find(arrayString[5]) < 0):
-                showError += "WX: " + arrayString[5] + " doesn't exist. Enter between 1 and " + str(self.width) + "\n"
-
-            #WY
-            if (marks.find(arrayString[6]) > self.height - 1 or marks.find(arrayString[6]) < 0):
-                showError += "WY: " + arrayString[6] + " doesn't exist. Enter between 1 and " + str(self.height) + "\n"
-
-            if (showError == ""):
-                return ((arrayString[0], int(arrayString[1])), Point(marks.find(arrayString[2]), marks.find(arrayString[3])), (arrayString[4], Point(marks.find(arrayString[5]), marks.find(arrayString[6]))))
+            if player not in {'X', 'O'}:
+                print(f"Player: {player} doesn't exist. Enter (X/O).")
+            elif piece not in {1, 2}:
+                print(f"Piece Number: {piece} doesn't exist. Enter (1/2).")
+            elif movePos.x not in range(self.width):
+                print(f"Position X: {movePos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+            elif movePos.y not in range(self.height):
+                print(f"Position Y: {movePos.y} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
+            elif wallType not in {'Z', 'P'}:
+                print(f"Wall Color: {wallType} doesn't exist. Enter either Z or P.")
+            elif movePos.x not in range(self.width):
+                print(f"Wall X: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+            elif movePos.y not in range(self.height):
+                print(f"Wall Y: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
             else:
-                print(showError)
+                return ((player, piece), movePos, (wallType, wallPos))
 
     def inBounds(self, pos):
         x, y = pos
@@ -250,7 +243,6 @@ class Game:
         if self.isMoveValid(piece_pos, new_position-piece_pos):
             player_pos[piece] = new_position
             self.playing = 'O' if self.playing == 'X' else 'X'
-            self.draw() # Privremeno
             return True
         else:
             print("Invalid move")
@@ -288,10 +280,10 @@ class Game:
 def makeGame():
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
-    X1 = make_tuple(input('Enter player X1 coordinates (x, y):'))
-    X2 = make_tuple(input('Enter player X2 coordinates (x, y):'))
-    O1 = make_tuple(input('Enter player O1 coordinates (x, y):'))
-    O2 = make_tuple(input('Enter player O2 coordinates (x, y):'))
+    X1 = Point(*make_tuple(input('Enter player X1 coordinates (x, y):')))
+    X2 = Point(*make_tuple(input('Enter player X2 coordinates (x, y):')))
+    O1 = Point(*make_tuple(input('Enter player O1 coordinates (x, y):')))
+    O2 = Point(*make_tuple(input('Enter player O2 coordinates (x, y):')))
     wall_count = int(input('Enter number of walls per user:'))
     player = input('Are you playing as X or O:')
     return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count, player)
