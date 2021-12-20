@@ -21,13 +21,15 @@ if DEBUG:
     marks = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 Point = namedtuple('Point', 'x y')
-Point.__add__ = lambda a,b: Point(a.x+b[0], a.y+b[1]) # type: ignore
-Point.__sub__ = lambda a,b: Point(a.x-b[0], a.y-b[1]) # type: ignore
+Point.__add__ = lambda a, b: Point(a.x+b[0], a.y+b[1])  # type: ignore
+Point.__sub__ = lambda a, b: Point(a.x-b[0], a.y-b[1])  # type: ignore
+
 
 def sign(x):
     if x == 0:
         return 0
     return 1 if x > 0 else -1
+
 
 class Game:
     def __init__(self, width, height, X1, X2, O1, O2, wall_count_per_player, human_player):
@@ -159,7 +161,9 @@ class Game:
     def parseMove(self):
         while True:
             inputString = input("Potez: ")
-            playerInfo, moveInfo, wallInfo = [x for x in re.findall(r'\[([^\]])\]', inputString)]
+            print([x for x in re.findall(r'\[([^\]]*)\]', inputString)])
+            playerInfo, moveInfo, wallInfo = [
+                x for x in re.findall(r'\[([^\]]*)\]', inputString)]
 
             player, piece = playerInfo.split()
             moveX, moveY = moveInfo.split()
@@ -174,15 +178,20 @@ class Game:
             elif piece not in {1, 2}:
                 print(f"Piece Number: {piece} doesn't exist. Enter (1/2).")
             elif movePos.x not in range(self.width):
-                print(f"Position X: {movePos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+                print(
+                    f"Position X: {movePos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
             elif movePos.y not in range(self.height):
-                print(f"Position Y: {movePos.y} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
+                print(
+                    f"Position Y: {movePos.y} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
             elif wallType not in {'Z', 'P'}:
-                print(f"Wall Color: {wallType} doesn't exist. Enter either Z or P.")
+                print(
+                    f"Wall Color: {wallType} doesn't exist. Enter either Z or P.")
             elif movePos.x not in range(self.width):
-                print(f"Wall X: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+                print(
+                    f"Wall X: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
             elif movePos.y not in range(self.height):
-                print(f"Wall Y: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
+                print(
+                    f"Wall Y: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
             else:
                 return ((player, piece), movePos, (wallType, wallPos))
 
@@ -203,6 +212,7 @@ class Game:
                            for wall in self.v_walls[pos.y])
             else:
                 return True
+
         def verticalCheck(pos, dy):
             if dy != 0:
                 start_y = (pos.y - 1 if sign(dy) == -1
@@ -214,7 +224,7 @@ class Game:
                 return True
 
         def diagonalCheck(pos, dx, dy):
-            return any([horizontalCheck(pos, dx) and verticalCheck(pos + (dx,0), dy),
+            return any([horizontalCheck(pos, dx) and verticalCheck(pos + (dx, 0), dy),
                         verticalCheck(pos, dy) and horizontalCheck(pos + (0, dy), dx)])
 
         # Convert to Point if normal tuple was passed, for debugging
@@ -277,6 +287,7 @@ class Game:
             return -1
         return 0
 
+
 def makeGame():
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
@@ -286,9 +297,17 @@ def makeGame():
     O2 = Point(*make_tuple(input('Enter player O2 coordinates (x, y):')))
     wall_count = int(input('Enter number of walls per user:'))
     player = input('Are you playing as X or O:')
-    return Game(width, height, X1-(1,1), X2-(1,1), O1-(1,1), O2-(1,1), wall_count, player)
+    return Game(width, height, X1-(1, 1), X2-(1, 1), O1-(1, 1), O2-(1, 1), wall_count, player)
+
+
+def playTwoPlayers():
+    while(not g.isGameFinished()):
+        g.makeMove(*g.parseMove())
+
 
 #g = makeGame()
 g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
 g.draw()
-#print(g.parseMove())
+
+g.draw()
+# print(g.parseMove())
