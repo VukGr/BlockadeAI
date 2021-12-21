@@ -41,12 +41,6 @@ class Game:
         self.playing = 'X'
         self.human_player = human_player
 
-        if DEBUG:
-            self.v_walls[0] = [0, 2, 4]
-            self.v_walls[1] = [0, 2, 4]
-            self.h_walls[0] = [0, 3]
-            self.v_walls[self.height-1] = [2]
-
     def interior(self):
         for y in range(self.height):
             v_wall_row = deque(self.v_walls[y])
@@ -135,23 +129,25 @@ class Game:
         if not self.inBounds(pos):
             return False
         if wallType == 'P':
-            if pos.x < self.width-2 and pos.x not in self.h_walls[pos.y] and pos.x+1 not in self.h_walls[pos.y]:
-                self.h_walls[pos.y].append(pos.x)
-                self.h_walls[pos.y].sort()
-                return True
+            if pos.x <= self.width-2:
+                if all(pos.x+dx not in self.h_walls[pos.y] for dx in [-1, 0, 1]):
+                    self.h_walls[pos.y].append(pos.x)
+                    self.h_walls[pos.y].sort()
+                    return True
         if wallType == 'Z':
-            if pos.y < self.height-2 and pos.x not in self.v_walls[pos.y] and pos.x not in self.v_walls[pos.y+1]:
-                self.v_walls[pos.y].append(pos.x)
-                self.v_walls[pos.y].sort()
-                self.v_walls[pos.y+1].append(pos.x)
-                self.v_walls[pos.y+1].sort()
-                return True
+            if pos.y <= self.height-2:
+                if all(pos.x not in self.v_walls[pos.y + dy] for dy in [-1, 0, 1]):
+                    self.v_walls[pos.y].append(pos.x)
+                    self.v_walls[pos.y].sort()
+                    self.v_walls[pos.y+1].append(pos.x)
+                    self.v_walls[pos.y+1].sort()
+                    return True
         return False
 
     def parseMove(self):
         while True:
             inputString = input("Move: ")
-            move = [ x for x in re.findall(r'\[([^\]]*)\]', inputString)]
+            move = [x for x in re.findall(r'\[([^\]]*)\]', inputString)]
             if len(move) != 3:
                 print("Invalid move.")
                 print("Proper syntax is [Player Piece] [PosX PosY] [WallType WallX WallY].")
@@ -246,7 +242,6 @@ class Game:
 
         if self.isMoveValid(piece_pos, new_position-piece_pos):
             player_pos[piece] = new_position
-            self.playing = 'O' if self.playing == 'X' else 'X'
             return True
         else:
             print("Invalid move")
@@ -264,8 +259,9 @@ class Game:
 
         if self.movePiece(piece, pos):
             if self.wall_count > 0:
-                if g.placeWall(wall_type, wall_pos):
+                if self.placeWall(wall_type, wall_pos):
                     self.wall_count -= 1
+                    self.playing = 'O' if self.playing == 'X' else 'X'
                     return True
                 else:
                     print("Invalid wall placement.")
@@ -284,8 +280,7 @@ class Game:
             if self.playing != self.human_player and cpu:
                 self.cpuMove()
             else:
-                while not self.makeMove(*self.parseMove()):
-                    pass
+                self.makeMove(*self.parseMove())
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
@@ -296,13 +291,16 @@ class Game:
 
 
 def makeGame():
+    def toPoint(string):
+        x, y = string.split()
+        return Point(marks.find(x),marks.find(y))
     width = int(input('Enter width:'))
     height = int(input('Enter height:'))
-    X1 = Point(*make_tuple(input('Enter player X1 coordinates (x, y):')))
-    X2 = Point(*make_tuple(input('Enter player X2 coordinates (x, y):')))
-    O1 = Point(*make_tuple(input('Enter player O1 coordinates (x, y):')))
-    O2 = Point(*make_tuple(input('Enter player O2 coordinates (x, y):')))
+    X1 = toPoint(input('Enter player X1 coordinates x y:'))
+    X2 = toPoint(input('Enter player X2 coordinates x y:'))
+    O1 = toPoint(input('Enter player O1 coordinates x y:'))
+    O2 = toPoint(input('Enter player O2 coordinates x y:'))
     wall_count = int(input('Enter number of walls per user:'))
     player = input('Are you playing as X or O:')
-    return Game(width, height, X1-(1, 1), X2-(1, 1), O1-(1, 1), O2-(1, 1), wall_count, player)
+    return Game(width, height, X1, X2, O1, O2, wall_count, player)
 
