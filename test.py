@@ -1,15 +1,13 @@
 from Game import Game, makeGame, DEBUG, marks
-from Util import Point
 import unittest
 from unittest.mock import patch
 
 def createDummyInput(input_list):
     i = 0
-    def fakeInput(prompt=''):
+    def fakeInput(_):
         nonlocal i
         val = input_list[i]
-        i += 1
-        if i >= len(input_list):
+        if (i:=i+1) >= len(input_list):
             i = 0
         return val
 
@@ -17,7 +15,7 @@ def createDummyInput(input_list):
 
 class TestGameClass(unittest.TestCase):
     def setUp(self):
-        self.g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
+        self.g = Game(20, 10, (3, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
         # Technically blocks X1 in, but that's for later
         # Also a vertical wall crossess a horizontal one on 1,1
         self.g.placeWall('Z', (0,0))
@@ -28,20 +26,18 @@ class TestGameClass(unittest.TestCase):
         self.g.placeWall('P', (3,0))
         return super().setUp()
 
-    @patch('builtins.input', createDummyInput(['20', '10',
-                                               '1 1', '2 2',
-                                               'A A', '9 9',
-                                               '9', 'X']))
+    @patch('builtins.input',
+           createDummyInput(['20','10','1 1','2 2','A A','9 9','9','X']))
     def test_makeGame(self):
         game = makeGame()
         self.assertEqual(game.width, 20)
         self.assertEqual(game.height, 10)
         if DEBUG:
-            self.assertEqual(game.x_pos, [Point(1,1), Point(2,2)])
-            self.assertEqual(game.o_pos, [Point(10,10), Point(9,9)])
+            self.assertEqual(game.x_pos, [(1,1), (2,2)])
+            self.assertEqual(game.o_pos, [(10,10), (9,9)])
         else:
-            self.assertEqual(game.x_pos, [Point(0,0), Point(1,1)])
-            self.assertEqual(game.o_pos, [Point(9,9), Point(8,8)])
+            self.assertEqual(game.x_pos, [(0,0), (1,1)])
+            self.assertEqual(game.o_pos, [(9,9), (8,8)])
         self.assertEqual(game.wall_count, 9*2)
         self.assertEqual(game.human_player, 'X')
 
@@ -76,11 +72,35 @@ class TestGameClass(unittest.TestCase):
         self.assertFalse(g.placeWall('Z', (1, 4)))
         self.assertFalse(g.placeWall('Z', (1, 5)))
 
+    @patch('builtins.input',
+           createDummyInput(['[X 2] [A 1] [Z 7 3]']))
     def test_parseMove(self):
-        pass
+        self.assertEqual(self.g.parseMove(), (
+                             ('X',1),
+                             (marks.find('A'), marks.find('1')),
+                             ('Z', (7, 3))
+                         ))
 
-    def test_isMoveValid(self):
-        pass
+    def test_isMoveValid_Diagonal(self):
+        g = self.g
+        self.assertTrue(g.isMoveValid((1,1), (+1,-1)))
+        self.assertFalse(g.isMoveValid((1,1), (-1,-1)))
+        self.assertTrue(g.isMoveValid((1,1), (-1,+1)))
+        self.assertTrue(g.isMoveValid((1,-1), (+1,+1)))
+
+        for dx in [+1, -1]:
+            for dy in [+1, -1]:
+                self.assertFalse(g.isMoveValid((3, 0), (dx, dy)))
+
+        # Piece colission
+        self.assertFalse(g.isMoveValid((8,8),(1,1)))
+
+    def test_isMoveValid_Straight(self):
+        g = self.g
+        self.assertFalse(g.isMoveValid((1,1), (-2,0)))
+        self.assertFalse(g.isMoveValid((1,1), (0,-2)))
+        self.assertFalse(g.isMoveValid((1,1), (+2,0)))
+        self.assertTrue(g.isMoveValid((1,1), (0,+2)))
 
 if __name__ == '__main__':
     unittest.main()
