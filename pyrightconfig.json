@@ -1,3 +1,8 @@
 {
-    "reportGeneralTypeIssues": false
+    "reportGeneralTypeIssues": false,
+    "executionEnvironments": [
+        {
+            "root": "code"
+        }
+    ]
 }
