@@ -160,10 +160,14 @@ class Game:
 
     def parseMove(self):
         while True:
-            inputString = input("Potez: ")
-            print([x for x in re.findall(r'\[([^\]]*)\]', inputString)])
-            playerInfo, moveInfo, wallInfo = [
-                x for x in re.findall(r'\[([^\]]*)\]', inputString)]
+            inputString = input("Move: ")
+            move = [ x for x in re.findall(r'\[([^\]]*)\]', inputString)]
+            if len(move) != 3:
+                print("Invalid move.")
+                print("Proper syntax is [Player Piece] [PosX PosY] [WallType WallX WallY].")
+                continue
+            playerInfo, moveInfo, wallInfo = [ x for x in re.findall(r'\[([^\]]*)\]', inputString)]
+
 
             player, piece = playerInfo.split()
             moveX, moveY = moveInfo.split()
@@ -193,7 +197,7 @@ class Game:
                 print(
                     f"Wall Y: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
             else:
-                return ((player, piece), movePos, (wallType, wallPos))
+                return ((player, piece-1), movePos, (wallType, wallPos))
 
     def inBounds(self, pos):
         x, y = pos
@@ -270,7 +274,7 @@ class Game:
 
         if self.movePiece(piece, pos):
             if self.wall_count > 0:
-                if g.placeWall(wall_type, *wall_pos):
+                if g.placeWall(wall_type, wall_pos):
                     self.wall_count -= 1
                     return True
                 else:
@@ -279,6 +283,19 @@ class Game:
         else:
             print("Invalid movement position")
             return False
+
+    def cpuMove(self):
+        self.playing = self.human_player
+        pass
+
+    def play(self, cpu=False):
+        while not self.isGameFinished():
+            self.draw()
+            if self.playing != self.human_player and cpu:
+                self.cpuMove()
+            else:
+                while not self.makeMove(*self.parseMove()):
+                    pass
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
@@ -301,13 +318,10 @@ def makeGame():
 
 
 def playTwoPlayers():
-    while(not g.isGameFinished()):
-        g.makeMove(*g.parseMove())
+        g.draw()
 
 
 #g = makeGame()
 g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
-g.draw()
-
-g.draw()
+g.play()
 # print(g.parseMove())
