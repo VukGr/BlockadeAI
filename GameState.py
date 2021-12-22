@@ -1,6 +1,6 @@
 from collections import deque
 from Util import Point, sign
-from Game import marks
+from Config import *
 
 # Temporary, hehe
 def allMoves():
@@ -28,7 +28,7 @@ class GameNode:
         return f"Node(pos={pointToStr(self.pos)}, moves={[(m.x,m.y) for m in self.moves]})"
 
 class GameState:
-    def __init__(self, width, height, x_pos, o_pos, human_player):
+    def __init__(self, width, height, x_pos, o_pos, wall_count_per_player, human_player):
         # Samo se koristi ako je prazan state!
         # tj nema zidova
         def genMoves(src):
@@ -40,12 +40,22 @@ class GameState:
                      if self.inBounds(src+move)
                      and src+move not in self.x_pos + self.o_pos])
 
+        if width > 22:
+            raise Exception("Max width is 22.")
+        if height > 28:
+            raise Exception("Max height is 28.")
+        if wall_count_per_player > 18:
+            raise Exception("Max wall count per player is 18.")
+
         self.width = width
         self.height = height
         self.x_pos = x_pos
         self.o_pos = o_pos
         self.v_walls = [[] for _ in range(self.width)]
+        self.x_start = self.x_pos.copy()
         self.h_walls = [[] for _ in range(self.height)]
+        self.o_start = self.o_pos.copy()
+        self.wall_count = wall_count_per_player * 2
         self.playing = 'X'
         self.human_player = human_player
         self.graph = [[GameNode(Point(x, y), genMoves(Point(x,y)))
@@ -130,7 +140,7 @@ class GameState:
                         invalidMoves = {(+2,0),(+1,0)} if x <= pos.x else {(-2,0),(-1,0)}
                         self.graph[y][x].moves = [
                             move for move in self.graph[y][x].moves
-                            if move != invalidMoves]
+                            if move not in invalidMoves]
             # Diagonal affected for x,x+1 for y-1, y, y+1, y+2
             for x in [pos.x, pos.x+1]:
                 for y in [pos.y-1, pos.y, pos.y+1, pos.y+2]:
@@ -207,7 +217,86 @@ class GameState:
             player_pos[piece] = new_position
             return True
         else:
-            print("Invalid move")
             return False
 
-gs = GameState(50, 50, [(0,0)], [(0,2)], 'X')
+    # TODO: Return new state
+    def makeMove(self, player_info, pos, wall):
+        player, piece = player_info
+        pos = Point(*pos)
+        wall_type, wall_pos = wall
+        wall_pos = Point(*wall_pos)
+        print(self.graph[0][0])
+
+        if player != self.playing:
+            print("Wrong player")
+            return False
+
+        if self.movePiece(piece, pos):
+            if self.wall_count > 0:
+                if self.placeWall(wall_type, wall_pos):
+                    self.wall_count -= 1
+                    self.playing = 'O' if self.playing == 'X' else 'X'
+                    print(self.graph[0][0])
+                    return True
+                else:
+                    print("Invalid wall placement.")
+                    return False
+        else:
+            print("Invalid movement position")
+            return False
+
+    def cpuMove(self):
+        self.playing = self.human_player
+        pass
+
+    def isGameFinished(self):
+        if any(x_piece in self.o_start for x_piece in self.x_pos):
+            return +1
+        if any(x_piece in self.o_start for x_piece in self.x_pos):
+            return -1
+        return 0
+
+    def drawGen(self):
+        for y in range(self.height):
+            v_wall_row = deque(self.v_walls[y])
+            # Vert zidovi i igraci/startne pozicije
+            for x in range(self.width):
+                # Igraci i startne pozicije
+                if (x, y) in self.x_pos:
+                    print(P1, end="")
+                elif (x, y) in self.o_pos:
+                    print(P2, end="")
+                elif (x, y) in self.x_start:
+                    print(START1, end="")
+                elif (x, y) in self.o_start:
+                    print(START2, end="")
+                else:
+                    print(" ", end="")
+                # Vert zidovi
+                if x < self.width-1:
+                    if len(v_wall_row) > 0 and x == v_wall_row[0]:
+                        v_wall_row.popleft()
+                        print(VZID, end="")
+                    else:
+                        print(VEMPTY, end="")
+            yield
+            # Horizontalni zidovi
+            skip_next = False
+            h_wall_row = deque(self.h_walls[y])
+            if y < self.height-1:
+                for x in range(self.width):
+                    if skip_next:
+                        print(HZID, end="")
+                        skip_next = False
+                    else:
+                        if len(h_wall_row) > 0 and x == h_wall_row[0]:
+                            h_wall_row.popleft()
+                            skip_next = True
+                            print(HZID, end="")
+                        else:
+                            print(HEMPTY, end="")
+                    if(x != self.width-1):
+                        print(MID, end="")
+            yield
+
+#gs = GameState(50, 50, [(0,0)], [(0,2)], 9, 'X')
