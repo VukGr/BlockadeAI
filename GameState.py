@@ -1,5 +1,5 @@
 from collections import deque
-from Util import Point, sign
+from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
 
 # Temporary, hehe
@@ -16,9 +16,6 @@ def diagonalMoves():
 def halfMoves():
     return {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
 
-def pointToStr(p):
-    return f"({marks[p.x]},{marks[p.y]})"
-
 class GameNode:
     def __init__(self, pos, moves=[]):
         self.pos = Point(*pos)
@@ -33,7 +30,7 @@ class GameState:
         # tj nema zidova
         def genMoves(src):
             return ({move if src+move not in self.x_pos + self.o_pos
-                     else Point(move.x//2, move.y//2)
+                     else move//2
                      for move in straightMoves()
                      if self.inBounds(src+move)} |
                     {move for move in diagonalMoves()
@@ -112,6 +109,7 @@ class GameState:
         else:
             return False
 
+    # TODO: Test placement some more
     def placeWall(self, wallType, pos):
         # Maybe mergable, *just* swap x and y
         def hRemovePaths(pos):
@@ -157,7 +155,7 @@ class GameState:
         # Vertical
         if wallType == 'Z':
             if pos.y <= self.height-2:
-                if all(pos.x not in self.v_walls[pos.y + dy] for dy in [-1, 0, 1]):
+                if all(pos.x not in self.v_walls[pos.y + dy] for dy in [0, 1]):
                     self.v_walls[pos.y].append(pos.x)
                     self.v_walls[pos.y].sort()
                     self.v_walls[pos.y+1].append(pos.x)
@@ -172,7 +170,7 @@ class GameState:
             nodes = [src+m for m in straightMoves() if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
-                halfRel = Point(rel.x//2, rel.y//2)
+                halfRel = rel // 2
                 self.graph[n.y][n.x].moves.discard(rel)
                 self.graph[n.y][n.x].moves.add(halfRel)
             # Remove diagonal moves
@@ -186,7 +184,7 @@ class GameState:
             nodes = [src+m for m in straightMoves() if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
-                halfRel = Point(rel.x//2, rel.y//2)
+                halfRel = rel // 2
                 self.graph[n.y][n.x].moves.add(rel)
                 self.graph[n.y][n.x].moves.discard(halfRel)
             # Re-add diagonal moves
@@ -243,6 +241,41 @@ class GameState:
             return -1
         return 0
 
+    def pathfind(self, start, end):
+        # Maybe put into config?
+        movement_cost = 1
+        start = Point(*start)
+        end = Point(*end)
+        open_set = set([start])
+        closed_set = set()
+        g = {start: 0}
+        prev_nodes = {start: None}
+        while len(open_set) > 0:
+            node = min(open_set, key=(lambda n: g[n] + pythagora(start, end)))
+
+            # Found end node
+            if node == end:
+                return prevToPath(prev_nodes, end)
+
+            for move in self.graph[node.y][node.x].moves:
+                m = node + move
+                # First time
+                if m not in open_set and m not in closed_set:
+                    open_set.add(m)
+                    g[m] = g[node] + movement_cost
+                    prev_nodes[m] = node
+                # Update
+                elif g[m] > g[node] + movement_cost:
+                    g[m] = g[node] + movement_cost
+                    prev_nodes[m] = node
+                    # Probably unneeded here?
+                    if m in closed_set:
+                        closed_set.remove(m)
+                        open_set.add(m)
+            open_set.remove(node)
+            closed_set.add(node)
+        return []
+
     def drawGen(self):
         for y in range(self.height):
             v_wall_row = deque(self.v_walls[y])
@@ -286,4 +319,4 @@ class GameState:
                         print(MID, end="")
             yield
 
-#gs = GameState(50, 50, [(0,0)], [(0,2)], 9, 'X')
+gs = GameState(5, 5, [(0,0)], [(0,2)], 9, 'X')
