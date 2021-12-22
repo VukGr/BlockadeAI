@@ -1,6 +1,7 @@
 from collections import deque
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
+import copy
 
 # Temporary, hehe
 def allMoves():
@@ -62,6 +63,12 @@ class GameState:
     def inBounds(self, pos):
         x, y = pos
         return x >= 0 and y >= 0 and x < self.width and y < self.height
+
+    def isStateValid(self):
+        return all(len(self.pathfind(start, end, full=False)) != 0
+                   for start in (self.x_pos + self.o_pos)
+                   for end in (self.x_start + self.o_start)
+                   if start != end)
 
     def isMoveValid(self, pos, move):
         # start_* is pos_* minus one in case of negative numbers
@@ -151,7 +158,7 @@ class GameState:
                     self.h_walls[pos.y].append(pos.x)
                     self.h_walls[pos.y].sort()
                     hRemovePaths(pos)
-                    return True
+                    return self.isStateValid()
         # Vertical
         if wallType == 'Z':
             if pos.y <= self.height-2:
@@ -161,7 +168,7 @@ class GameState:
                     self.v_walls[pos.y+1].append(pos.x)
                     self.v_walls[pos.y+1].sort()
                     vRemovePaths(pos)
-                    return True
+                    return self.isStateValid()
         return False
 
     def movePiece(self, piece, new_position):
@@ -206,8 +213,8 @@ class GameState:
         else:
             return False
 
-    # TODO: Return new state
-    def makeMove(self, player_info, pos, wall):
+    # TODO: Maybe better name
+    def doMove(self, player_info, pos, wall):
         player, piece = player_info
         pos = Point(*pos)
         wall_type, wall_pos = wall
@@ -230,6 +237,14 @@ class GameState:
             print("Invalid movement position")
             return False
 
+    # TODO: Maybe better name
+    def makeMove(self, player_info, pos, wall):
+        newState = copy.deepcopy(self)
+        if newState.doMove(player_info, pos, wall):
+            return newState
+        else:
+            return None
+
     def cpuMove(self):
         self.playing = self.human_player
         pass
@@ -241,11 +256,12 @@ class GameState:
             return -1
         return 0
 
-    def pathfind(self, start, end):
+    def pathfind(self, start, end, full=True):
         # Maybe put into config?
         movement_cost = 1
         start = Point(*start)
         end = Point(*end)
+        end_adjacents = {end+move for move in self.graph[end.y][end.x].moves}
         open_set = set([start])
         closed_set = set()
         g = {start: 0}
@@ -254,7 +270,11 @@ class GameState:
             node = min(open_set, key=(lambda n: g[n] + pythagora(start, end)))
 
             # Found end node
-            if node == end:
+            if full:
+                if node == end:
+                    return prevToPath(prev_nodes, end)
+            elif node in end_adjacents:
+                prev_nodes[end] = node
                 return prevToPath(prev_nodes, end)
 
             for move in self.graph[node.y][node.x].moves:

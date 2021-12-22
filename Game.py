@@ -84,20 +84,20 @@ class Game:
             elif piece not in {1, 2}:
                 print(f"Piece Number: {piece} doesn't exist. Enter (1/2).")
             elif movePos.x not in range(self.width):
-                print(
-                    f"Position X: {movePos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+                print(f"Position X: {movePos.x} doesn't exist.")
+                print(f"Enter between 1 and {marks[self.width-1]}.")
             elif movePos.y not in range(self.height):
-                print(
-                    f"Position Y: {movePos.y} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
+                print(f"Position Y: {movePos.y} doesn't exist.")
+                print(f"Enter between 1 and {marks[self.height-1]}.")
             elif wallType not in {'Z', 'P'}:
-                print(
-                    f"Wall Color: {wallType} doesn't exist. Enter either Z or P.")
+                print(f"Wall Color: {wallType} doesn't exist.")
+                print("Enter either Z or P.")
             elif movePos.x not in range(self.width):
-                print(
-                    f"Wall X: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.width-1]}.")
+                print(f"Wall X: {wallPos.x} doesn't exist.")
+                print(f"Enter between 1 and {marks[self.width-1]}.")
             elif movePos.y not in range(self.height):
-                print(
-                    f"Wall Y: {wallPos.x} doesn't exist. Enter between 1 and {marks[self.height-1]}.")
+                print(f"Wall Y: {wallPos.x} doesn't exist.")
+                print(f"Enter between 1 and {marks[self.height-1]}.")
             else:
                 return ((player, piece-1), movePos, (wallType, wallPos))
 
@@ -111,7 +111,9 @@ class Game:
             if self.state.playing != self.state.human_player and cpu:
                 self.state.cpuMove()
             else:
-                self.state.makeMove(*self.parseMove())
+                newState = self.state.makeMove(*self.parseMove())
+                if newState != None:
+                    self.state = newState
 
 def makeGame():
     def toPoint(string):
