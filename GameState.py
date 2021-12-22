@@ -4,17 +4,17 @@ from Config import *
 
 # Temporary, hehe
 def allMoves():
-    return [(+2,0),(-2,0),(0,+2),(0,-2),
-            (+1,+1),(-1,+1),(-1,-1),(+1,-1)]
+    return {(+2,0),(-2,0),(0,+2),(0,-2),
+            (+1,+1),(-1,+1),(-1,-1),(+1,-1)}
 
 def straightMoves():
-    return [Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)]
+    return {Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)}
 
 def diagonalMoves():
-    return [Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)]
+    return {Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)}
 
 def halfMoves():
-    return [Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)]
+    return {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
 
 def pointToStr(p):
     return f"({marks[p.x]},{marks[p.y]})"
@@ -32,13 +32,13 @@ class GameState:
         # Samo se koristi ako je prazan state!
         # tj nema zidova
         def genMoves(src):
-            return ([move if src+move not in self.x_pos + self.o_pos
+            return ({move if src+move not in self.x_pos + self.o_pos
                      else Point(move.x//2, move.y//2)
                      for move in straightMoves()
-                     if self.inBounds(src+move)] +
-                    [move for move in diagonalMoves()
+                     if self.inBounds(src+move)} |
+                    {move for move in diagonalMoves()
                      if self.inBounds(src+move)
-                     and src+move not in self.x_pos + self.o_pos])
+                     and src+move not in self.x_pos + self.o_pos})
 
         if width > 22:
             raise Exception("Max width is 22.")
@@ -120,36 +120,28 @@ class GameState:
                 for x in [pos.x, pos.x+1]:
                     if self.inBounds((x,y)):
                         invalidMoves = {(0,+2),(0,+1)} if y <= pos.y else {(0,-2),(0,-1)}
-                        self.graph[y][x].moves = [
-                            move for move in self.graph[y][x].moves
-                            if move not in invalidMoves]
+                        self.graph[y][x].moves -= invalidMoves
             # Diagonal affected for y,y+1 for x-1, x, x+1, x+2
             for y in [pos.y, pos.y+1]:
                 for x in [pos.x-1, pos.x, pos.x+1, pos.x+2]:
                     if self.inBounds((x,y)):
                         invalidMoves = {move for move in diagonalMoves()
-                                       if not self.isMoveValid((x,y), move)}
-                        self.graph[y][x].moves = [
-                            move for move in self.graph[y][x].moves
-                            if move not in invalidMoves]
+                                        if not self.isMoveValid((x,y), move)}
+                        self.graph[y][x].moves -= invalidMoves
         def vRemovePaths(pos):
             # Straight left/right affected for x-1,x,x+1,x+2 for y, y+1
             for x in [pos.x-1, pos.x, pos.x+1, pos.x+2]:
                 for y in [pos.y, pos.y+1]:
                     if self.inBounds((x,y)):
                         invalidMoves = {(+2,0),(+1,0)} if x <= pos.x else {(-2,0),(-1,0)}
-                        self.graph[y][x].moves = [
-                            move for move in self.graph[y][x].moves
-                            if move not in invalidMoves]
+                        self.graph[y][x].moves -= invalidMoves
             # Diagonal affected for x,x+1 for y-1, y, y+1, y+2
             for x in [pos.x, pos.x+1]:
                 for y in [pos.y-1, pos.y, pos.y+1, pos.y+2]:
                     if self.inBounds((x,y)):
                         invalidMoves = {move for move in diagonalMoves()
-                                       if not self.isMoveValid((x,y), move)}
-                        self.graph[y][x].moves = [
-                            move for move in self.graph[y][x].moves
-                            if move not in invalidMoves]
+                                        if not self.isMoveValid((x,y), move)}
+                        self.graph[y][x].moves -= invalidMoves
 
         pos = Point(*pos)
         if not self.inBounds(pos):
@@ -181,15 +173,13 @@ class GameState:
             for n in nodes:
                 rel = src - n
                 halfRel = Point(rel.x//2, rel.y//2)
-                self.graph[n.y][n.x].moves = [m for m in self.graph[n.y][n.x].moves
-                                              if m != rel]
-                self.graph[n.y][n.x].moves.append(halfRel)
+                self.graph[n.y][n.x].moves.discard(rel)
+                self.graph[n.y][n.x].moves.add(halfRel)
             # Remove diagonal moves
             nodes = [src+m for m in diagonalMoves() if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
-                self.graph[n.y][n.x].moves = [m for m in self.graph[n.y][n.x].moves
-                                              if m != rel]
+                self.graph[n.y][n.x].moves.discard(rel)
 
         def fixPrevSpace(src):
             # Replace half moves with proper ones
@@ -197,14 +187,13 @@ class GameState:
             for n in nodes:
                 rel = src - n
                 halfRel = Point(rel.x//2, rel.y//2)
-                self.graph[n.y][n.x].moves = [m for m in self.graph[n.y][n.x].moves
-                                              if m != halfRel]
-                self.graph[n.y][n.x].moves.append(rel)
+                self.graph[n.y][n.x].moves.add(rel)
+                self.graph[n.y][n.x].moves.discard(halfRel)
             # Re-add diagonal moves
             nodes = [src+m for m in diagonalMoves() if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
-                self.graph[n.y][n.x].moves.append(rel)
+                self.graph[n.y][n.x].moves.add(rel)
 
         player_pos = self.x_pos if self.playing == 'X' else self.o_pos
         piece_pos = Point(*player_pos[piece])
@@ -225,7 +214,6 @@ class GameState:
         pos = Point(*pos)
         wall_type, wall_pos = wall
         wall_pos = Point(*wall_pos)
-        print(self.graph[0][0])
 
         if player != self.playing:
             print("Wrong player")
@@ -236,7 +224,6 @@ class GameState:
                 if self.placeWall(wall_type, wall_pos):
                     self.wall_count -= 1
                     self.playing = 'O' if self.playing == 'X' else 'X'
-                    print(self.graph[0][0])
                     return True
                 else:
                     print("Invalid wall placement.")
