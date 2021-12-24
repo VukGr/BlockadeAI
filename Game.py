@@ -111,9 +111,9 @@ class Game:
             if self.state.playing != self.state.human_player and cpu:
                 self.state.cpuMove()
             else:
-                newState = self.state.makeMove(*self.parseMove())
-                if newState != None:
-                    self.state = newState
+                while newState := self.state.makeMove(*self.parseMove()) == None:
+                    pass
+                self.state = newState
 
 def makeGame():
     def toPoint(string):
