@@ -2,6 +2,7 @@ from Game import Game, makeGame, DEBUG
 
 #g = makeGame()
 g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
+#g = Game(4, 4, (0, 0), (1, 1), (2, 2), (3, 3), 9, 'X')
 
 # Z - Verical
 # P - Horizontal

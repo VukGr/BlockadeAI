@@ -2,6 +2,9 @@ from collections import deque
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
 import copy
+import pprint
+
+pp = pprint.PrettyPrinter()
 
 # Temporary, hehe
 def allMoves():
@@ -270,6 +273,7 @@ class GameState:
         g = {start: 0}
         prev_nodes = {start: None}
         while len(open_set) > 0:
+            #print(open_set)
             node = min(open_set, key=(lambda n: g[n] + pythagora(start, end)))
 
             # Found end node
@@ -277,7 +281,8 @@ class GameState:
                 if node == end:
                     return prevToPath(prev_nodes, end)
             elif node in end_adjacents:
-                prev_nodes[end] = node
+                if end not in prev_nodes:
+                    prev_nodes[end] = node
                 return prevToPath(prev_nodes, end)
 
             for move in self.graph[node.y][node.x].moves:

@@ -108,12 +108,14 @@ class Game:
     def play(self, cpu=False):
         while not self.state.isGameFinished():
             self.draw()
-            if self.state.playing != self.state.human_player and cpu:
+            if cpu and self.state.playing != self.state.human_player: # type: ignore
                 self.state.cpuMove()
             else:
-                while newState := self.state.makeMove(*self.parseMove()) == None:
-                    pass
-                self.state = newState
+                while True:
+                    newState = self.state.makeMove(*self.parseMove())
+                    if newState != None:
+                        self.state = newState
+                        break
 
 def makeGame():
     def toPoint(string):
