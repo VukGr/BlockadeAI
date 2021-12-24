@@ -8,8 +8,8 @@ MID = '┼'
 
 P1 = 'X'
 P2 = 'O'
-START1 = 'x'
-START2 = 'o'
+START1 = '●'
+START2 = '■'
 
 marks = "123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 if DEBUG:

@@ -53,6 +53,7 @@ class GameState:
         self.x_start = self.x_pos.copy()
         self.h_walls = [[] for _ in range(self.height)]
         self.o_start = self.o_pos.copy()
+        self.wall_cross_check = set()
         self.wall_count = wall_count_per_player * 2
         self.playing = 'X'
         self.human_player = human_player
@@ -149,14 +150,15 @@ class GameState:
                         self.graph[y][x].moves -= invalidMoves
 
         pos = Point(*pos)
-        if not self.inBounds(pos):
+        if not self.inBounds(pos) or pos in self.wall_cross_check:
             return False
         # Horizontal
         if wallType == 'P':
-            if pos.x <= self.width-2:
+            if pos.x <= self.width-2 and pos:
                 if all(pos.x+dx not in self.h_walls[pos.y] for dx in [-1, 0, 1]):
                     self.h_walls[pos.y].append(pos.x)
                     self.h_walls[pos.y].sort()
+                    self.wall_cross_check.add(pos)
                     hRemovePaths(pos)
                     return self.isStateValid()
         # Vertical
@@ -167,6 +169,7 @@ class GameState:
                     self.v_walls[pos.y].sort()
                     self.v_walls[pos.y+1].append(pos.x)
                     self.v_walls[pos.y+1].sort()
+                    self.wall_cross_check.add(pos)
                     vRemovePaths(pos)
                     return self.isStateValid()
         return False
