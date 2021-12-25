@@ -163,7 +163,10 @@ class GameState:
                     self.h_walls[pos.y].sort()
                     self.wall_cross_check.add(pos)
                     hRemovePaths(pos)
-                    return self.isStateValid()
+                    if self.isStateValid():
+                        return True
+                    else:
+                        print("Blocking path to start position.")
         # Vertical
         if wallType == 'Z':
             if pos.y <= self.height-2:
@@ -174,7 +177,10 @@ class GameState:
                     self.v_walls[pos.y+1].sort()
                     self.wall_cross_check.add(pos)
                     vRemovePaths(pos)
-                    return self.isStateValid()
+                    if self.isStateValid():
+                        return True
+                    else:
+                        print("Blocking path to start position.")
         return False
 
     def movePiece(self, piece, new_position):

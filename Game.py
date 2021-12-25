@@ -84,10 +84,10 @@ class Game:
             elif piece not in {1, 2}:
                 print(f"Piece Number: {piece} doesn't exist. Enter (1/2).")
             elif movePos.x not in range(self.width):
-                print(f"Position X: {movePos.x} doesn't exist.")
+                print(f"Position X: {moveX} doesn't exist.")
                 print(f"Enter between 1 and {marks[self.width-1]}.")
             elif movePos.y not in range(self.height):
-                print(f"Position Y: {movePos.y} doesn't exist.")
+                print(f"Position Y: {moveY} doesn't exist.")
                 print(f"Enter between 1 and {marks[self.height-1]}.")
             elif wallType not in {'Z', 'P'}:
                 print(f"Wall Color: {wallType} doesn't exist.")
