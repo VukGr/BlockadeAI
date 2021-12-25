@@ -2,29 +2,15 @@ from collections import deque
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
 import copy
-import pprint
 
-pp = pprint.PrettyPrinter()
-
-# Temporary, hehe
-def allMoves():
-    return {(+2,0),(-2,0),(0,+2),(0,-2),
-            (+1,+1),(-1,+1),(-1,-1),(+1,-1)}
-
-def straightMoves():
-    return {Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)}
-
-def diagonalMoves():
-    return {Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)}
-
-def halfMoves():
-    return {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
+straightMoves = {Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)}
+diagonalMoves = {Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)}
+halfMoves = {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
 
 class GameNode:
     def __init__(self, pos, moves=[]):
         self.pos = Point(*pos)
         self.moves = moves
-
     def __repr__(self):
         return f"Node(pos={pointToStr(self.pos)}, moves={[(m.x,m.y) for m in self.moves]})"
 
@@ -35,9 +21,9 @@ class GameState:
         def genMoves(src):
             return ({move if src+move not in self.x_pos + self.o_pos
                      else move//2
-                     for move in straightMoves()
+                     for move in straightMoves
                      if self.inBounds(src+move)} |
-                    {move for move in diagonalMoves()
+                    {move for move in diagonalMoves
                      if self.inBounds(src+move)
                      and src+move not in self.x_pos + self.o_pos})
 
@@ -52,7 +38,7 @@ class GameState:
         self.height = height
         self.x_pos = x_pos
         self.o_pos = o_pos
-        self.v_walls = [[] for _ in range(self.width)]
+        self.v_walls = [[] for _ in range(self.height)]
         self.x_start = self.x_pos.copy()
         self.h_walls = [[] for _ in range(self.height)]
         self.o_start = self.o_pos.copy()
@@ -120,7 +106,6 @@ class GameState:
         else:
             return False
 
-    # TODO: Test placement some more
     def placeWall(self, wallType, pos):
         # Maybe mergable, *just* swap x and y
         def hRemovePaths(pos):
@@ -134,7 +119,7 @@ class GameState:
             for y in [pos.y, pos.y+1]:
                 for x in [pos.x-1, pos.x, pos.x+1, pos.x+2]:
                     if self.inBounds((x,y)):
-                        invalidMoves = {move for move in diagonalMoves()
+                        invalidMoves = {move for move in diagonalMoves
                                         if not self.isMoveValid((x,y), move)}
                         self.graph[y][x].moves -= invalidMoves
         def vRemovePaths(pos):
@@ -148,7 +133,7 @@ class GameState:
             for x in [pos.x, pos.x+1]:
                 for y in [pos.y-1, pos.y, pos.y+1, pos.y+2]:
                     if self.inBounds((x,y)):
-                        invalidMoves = {move for move in diagonalMoves()
+                        invalidMoves = {move for move in diagonalMoves
                                         if not self.isMoveValid((x,y), move)}
                         self.graph[y][x].moves -= invalidMoves
 
@@ -186,28 +171,28 @@ class GameState:
     def movePiece(self, piece, new_position):
         def fixNewSpace(src):
             # Replace straight moves with half ones
-            nodes = [src+m for m in straightMoves() if self.inBounds(src+m)]
+            nodes = [src+m for m in straightMoves if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
                 halfRel = rel // 2
                 self.graph[n.y][n.x].moves.discard(rel)
                 self.graph[n.y][n.x].moves.add(halfRel)
             # Remove diagonal moves
-            nodes = [src+m for m in diagonalMoves() if self.inBounds(src+m)]
+            nodes = [src+m for m in diagonalMoves if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
                 self.graph[n.y][n.x].moves.discard(rel)
 
         def fixPrevSpace(src):
             # Replace half moves with proper ones
-            nodes = [src+m for m in straightMoves() if self.inBounds(src+m)]
+            nodes = [src+m for m in straightMoves if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
                 halfRel = rel // 2
                 self.graph[n.y][n.x].moves.add(rel)
                 self.graph[n.y][n.x].moves.discard(halfRel)
             # Re-add diagonal moves
-            nodes = [src+m for m in diagonalMoves() if self.inBounds(src+m)]
+            nodes = [src+m for m in diagonalMoves if self.inBounds(src+m)]
             for n in nodes:
                 rel = src - n
                 self.graph[n.y][n.x].moves.add(rel)
@@ -225,7 +210,6 @@ class GameState:
         else:
             return False
 
-    # TODO: Maybe better name
     def doMove(self, player_info, pos, wall):
         player, piece = player_info
         pos = Point(*pos)
@@ -249,7 +233,6 @@ class GameState:
             print("Invalid movement position")
             return False
 
-    # TODO: Maybe better name
     def makeMove(self, player_info, pos, wall):
         newState = copy.deepcopy(self)
         if newState.doMove(player_info, pos, wall):
@@ -352,5 +335,3 @@ class GameState:
                     if(x != self.width-1):
                         print(MID, end="")
             yield
-
-gs = GameState(5, 5, [(0,0)], [(0,2)], 9, 'X')

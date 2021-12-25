@@ -1,9 +1,6 @@
-from collections import deque
 import re
-# https://stackoverflow.com/questions/9763116/parse-a-tuple-from-a-string
-from ast import literal_eval as make_tuple
 from GameState import GameState
-from Util import Point, sign
+from Util import Point
 from Config import *
 
 class Game:
@@ -70,7 +67,6 @@ class Game:
                 continue
             playerInfo, moveInfo, wallInfo = [ x for x in re.findall(r'\[([^\]]*)\]', inputString)]
 
-
             player, piece = playerInfo.split()
             moveX, moveY = moveInfo.split()
             wallType, wallX, wallY = wallInfo.split()
@@ -100,10 +96,6 @@ class Game:
                 print(f"Enter between 1 and {marks[self.height-1]}.")
             else:
                 return ((player, piece-1), movePos, (wallType, wallPos))
-
-    def inBounds(self, pos):
-        x, y = pos
-        return x >= 0 and y >= 0 and x < self.width and y < self.height
 
     def play(self, cpu=False):
         while not self.state.isGameFinished():
