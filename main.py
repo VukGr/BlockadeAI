@@ -1,6 +1,10 @@
-from Game import makeGame
+from Game import makeGame, Game
 
-g = makeGame()
+#g = makeGame()
 #g = Game(20, 10, (0, 0), (1, 1), (9, 9), (8, 8), 9, 'X')
+#gs = GameState(5, 5, [Point(0,0)], [Point(4,4)], 5, 'X')
+g = Game(5,5, (0,0), (1,1), (3,3), (4,4), 5, 'X')
 
-g.play()
+[g.state.cpuMove() for x in range(50)]
+#g.state.cpuMove()
+#g.play()

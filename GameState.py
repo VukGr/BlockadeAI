@@ -2,6 +2,10 @@ from collections import deque
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
 import copy
+from pprint import PrettyPrinter
+import pickle
+
+pp = PrettyPrinter()
 
 straightMoves = {Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)}
 diagonalMoves = {Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)}
@@ -106,6 +110,17 @@ class GameState:
         else:
             return False
 
+    def isWallValid(self, wallType, pos):
+        pos = Point(*pos)
+        if pos.x >= 0 and pos.x <= self.width-2 and pos.y >= 0 and pos.y <= self.height-2:
+            if pos in self.wall_cross_check:
+                return False
+            if wallType == 'P':
+                return all(pos.x+dx not in self.h_walls[pos.y] for dx in [-1, 0, 1])
+            if wallType == 'Z':
+                return all(pos.x not in self.v_walls[pos.y + dy] for dy in [0, 1])
+        return False
+
     def placeWall(self, wallType, pos):
         # Maybe mergable, *just* swap x and y
         def hRemovePaths(pos):
@@ -136,37 +151,46 @@ class GameState:
                         invalidMoves = {move for move in diagonalMoves
                                         if not self.isMoveValid((x,y), move)}
                         self.graph[y][x].moves -= invalidMoves
-
+        def isWallTouching(pos):
+            if wallType == 'P':
+                if pos.x == 0 or pos.x == self.width-2:
+                    return True
+                return any([pos.x-2 in self.h_walls[pos.y],
+                            pos.x+2 in self.h_walls[pos.y]] +
+                           [pos.x+dx-1 in self.v_walls[pos.y+dy+1]
+                            for dx in [0,1,2]
+                            for dy in [-1,0]
+                            if dy >= 0])
+            else:
+                if pos.y == 0 or pos.y == self.height-2:
+                    return True
+                return any([pos.x in self.v_walls[pos.y-1],
+                            pos.x in self.v_walls[pos.y+1]] +
+                           [pos.x+dx+1 in self.h_walls[pos.y+dy-1]
+                            for dx in [-2,-1,0]
+                            for dy in [0,1,2]])
         pos = Point(*pos)
-        if not self.inBounds(pos) or pos in self.wall_cross_check:
+        if not self.isWallValid(wallType, pos):
             return False
+        isntTouching = not isWallTouching(pos)
         # Horizontal
         if wallType == 'P':
-            if pos.x <= self.width-2 and pos:
-                if all(pos.x+dx not in self.h_walls[pos.y] for dx in [-1, 0, 1]):
-                    self.h_walls[pos.y].append(pos.x)
-                    self.h_walls[pos.y].sort()
-                    self.wall_cross_check.add(pos)
-                    hRemovePaths(pos)
-                    if self.isStateValid():
-                        return True
-                    else:
-                        print("Blocking path to start position.")
+            self.h_walls[pos.y].append(pos.x)
+            self.h_walls[pos.y].sort()
+            self.wall_cross_check.add(pos)
+            hRemovePaths(pos)
         # Vertical
         if wallType == 'Z':
-            if pos.y <= self.height-2:
-                if all(pos.x not in self.v_walls[pos.y + dy] for dy in [0, 1]):
-                    self.v_walls[pos.y].append(pos.x)
-                    self.v_walls[pos.y].sort()
-                    self.v_walls[pos.y+1].append(pos.x)
-                    self.v_walls[pos.y+1].sort()
-                    self.wall_cross_check.add(pos)
-                    vRemovePaths(pos)
-                    if self.isStateValid():
-                        return True
-                    else:
-                        print("Blocking path to start position.")
-        return False
+            self.v_walls[pos.y].append(pos.x)
+            self.v_walls[pos.y].sort()
+            self.v_walls[pos.y+1].append(pos.x)
+            self.v_walls[pos.y+1].sort()
+            self.wall_cross_check.add(pos)
+            vRemovePaths(pos)
+        if isntTouching or self.isStateValid():
+            return True
+        else:
+            return False
 
     def movePiece(self, piece, new_position):
         def fixNewSpace(src):
@@ -210,14 +234,15 @@ class GameState:
         else:
             return False
 
-    def doMove(self, player_info, pos, wall):
+    def doMove(self, player_info, pos, wall, printWarning=True):
         player, piece = player_info
         pos = Point(*pos)
         wall_type, wall_pos = wall
         wall_pos = Point(*wall_pos)
 
         if player != self.playing:
-            print("Wrong player")
+            if printWarning:
+                print("Wrong player")
             return False
 
         if self.movePiece(piece, pos):
@@ -227,27 +252,48 @@ class GameState:
                     self.playing = 'O' if self.playing == 'X' else 'X'
                     return True
                 else:
-                    print("Invalid wall placement.")
+                    if printWarning:
+                        print("Invalid wall placement.")
                     return False
         else:
-            print("Invalid movement position")
+            if printWarning:
+                print("Invalid movement position")
             return False
 
-    def makeMove(self, player_info, pos, wall):
+    def makeMove(self, player_info, pos, wall, printWarning=True):
         newState = copy.deepcopy(self)
-        if newState.doMove(player_info, pos, wall):
+        if newState.doMove(player_info, pos, wall, printWarning):
             return newState
         else:
             return None
 
     def cpuMove(self):
-        self.playing = self.human_player
-        pass
+        piecePos = self.x_pos if self.playing == 'X' else self.o_pos
+        allPieceMoves = [(i, p+m)
+                         for i,p in enumerate(piecePos)
+                         for m in self.graph[p.y][p.x].moves]
+        allWallMoves = [(t, Point(x,y))
+                        for x in range(self.width)
+                        for y in range(self.height)
+                        for t in {'Z', 'P'}
+                        if self.isWallValid(t, Point(x,y))]
+        allMoves = [(pieceMove, wallMove)
+                    for wallMove in allWallMoves
+                    for pieceMove in allPieceMoves]
+        minmax = max if self.playing == 'X' else min
+        states = [self.makeMove((self.playing, piece), pieceMove, wallMove, False)
+                  for (piece, pieceMove), wallMove in allMoves]
+        #pp.pprint(allWallMoves)
+        #pp.pprint(allPieceMoves)
+        #pp.pprint(allMoves)
+        #pp.pprint(states)
+        #self.playing = self.human_player
+        return allMoves
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
             return +1
-        if any(x_piece in self.o_start for x_piece in self.x_pos):
+        if any(o_piece in self.x_start for o_piece in self.o_pos):
             return -1
         return 0
 
@@ -262,7 +308,6 @@ class GameState:
         g = {start: 0}
         prev_nodes = {start: None}
         while len(open_set) > 0:
-            #print(open_set)
             node = min(open_set, key=(lambda n: g[n] + pythagora(start, end)))
 
             # Found end node
