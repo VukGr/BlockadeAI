@@ -1,9 +1,11 @@
 from collections import deque
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
-import copy
-from pprint import PrettyPrinter
+import math
 import pickle
+from heapq import heappush, heappop
+
+from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
 
@@ -89,8 +91,8 @@ class GameState:
                 return True
 
         def diagonalCheck(pos, dx, dy):
-            return any([horizontalCheck(pos, dx) and verticalCheck(pos + (dx, 0), dy),
-                        verticalCheck(pos, dy) and horizontalCheck(pos + (0, dy), dx)])
+            return ((horizontalCheck(pos, dx) and verticalCheck(pos + (dx, 0), dy)) or
+                    (verticalCheck(pos, dy) and horizontalCheck(pos + (0, dy), dx)))
 
         # Convert to Point if normal tuple was passed, for debugging
         pos = Point(*pos)
@@ -261,13 +263,24 @@ class GameState:
             return False
 
     def makeMove(self, player_info, pos, wall, printWarning=True):
-        newState = copy.deepcopy(self)
+        #newState = copy.deepcopy(self)
+        #https://stackoverflow.com/questions/24756712/deepcopy-is-extremely-slow
+        newState = pickle.loads(pickle.dumps(self))
         if newState.doMove(player_info, pos, wall, printWarning):
             return newState
         else:
             return None
 
-    def cpuMove(self):
+    def score(self):
+        # Placeholder
+        if any(piece in self.o_start for piece in self.x_pos):
+            return math.inf
+        if any(piece in self.x_start for piece in self.o_pos):
+            return -math.inf
+        return (min(pythagora(start, end) for start in self.o_pos for end in self.x_start) -
+                min(pythagora(start, end) for start in self.x_pos for end in self.o_start))
+
+    def cpuMove(self, depth=2):
         piecePos = self.x_pos if self.playing == 'X' else self.o_pos
         allPieceMoves = [(i, p+m)
                          for i,p in enumerate(piecePos)
@@ -288,7 +301,7 @@ class GameState:
         #pp.pprint(allMoves)
         #pp.pprint(states)
         #self.playing = self.human_player
-        return allMoves
+        return states
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
@@ -304,11 +317,13 @@ class GameState:
         end = Point(*end)
         end_adjacents = {end+move for move in self.graph[end.y][end.x].moves}
         open_set = set([start])
+        open_heap = [(0, start)]
         closed_set = set()
         g = {start: 0}
         prev_nodes = {start: None}
         while len(open_set) > 0:
-            node = min(open_set, key=(lambda n: g[n] + pythagora(start, end)))
+            #node = min(open_set, key=(lambda n: g[n] + pythagora(n, end)))
+            _, node = heappop(open_heap)
 
             # Found end node
             if full:
@@ -325,6 +340,7 @@ class GameState:
                 if m not in open_set and m not in closed_set:
                     open_set.add(m)
                     g[m] = g[node] + movement_cost
+                    heappush(open_heap, (g[m] + pythagora(m, end), m))
                     prev_nodes[m] = node
                 # Update
                 elif g[m] > g[node] + movement_cost:

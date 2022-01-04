@@ -1,5 +1,6 @@
 from collections import namedtuple
 from Config import *
+from functools import lru_cache
 import math
 
 Point = namedtuple('Point', 'x y')
@@ -20,6 +21,7 @@ def prevToPath(prev_nodes, end):
     path.reverse()
     return path
 
+@lru_cache
 def pythagora(p1: Point, p2: Point) -> int:
     a = abs(p1.x - p2.x)
     b = abs(p1.y - p2.y)
