@@ -314,9 +314,8 @@ class GameState:
         else:
             bestScore = worstScore
             bestState = None
-            nextLimit = None # Can merge with bestScore?
             for state in states:
-                bestChild = state.cpuMove(depth-1, nextLimit)
+                bestChild = state.cpuMove(depth-1, bestScore)
                 if bestChild == None:
                     continue
                 score = bestChild.score()
@@ -325,9 +324,7 @@ class GameState:
                 if minmax(bestScore, score) == score:
                     bestScore = score
                     bestState = state
-                    nextLimit = score
             return bestState
-            #return minmax(states, key=(lambda s: s.cpuMove(depth-1).score()))
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
