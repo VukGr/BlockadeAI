@@ -263,8 +263,7 @@ class GameState:
             return False
 
     def makeMove(self, player_info, pos, wall, printWarning=True):
-        #newState = copy.deepcopy(self)
-        #https://stackoverflow.com/questions/24756712/deepcopy-is-extremely-slow
+        # https://stackoverflow.com/questions/24756712/deepcopy-is-extremely-slow
         newState = pickle.loads(pickle.dumps(self))
         if newState.doMove(player_info, pos, wall, printWarning):
             return newState
@@ -280,7 +279,7 @@ class GameState:
         return (min(pythagora(start, end) for start in self.o_pos for end in self.x_start) -
                 min(pythagora(start, end) for start in self.x_pos for end in self.o_start))
 
-    def cpuMove(self, depth=2):
+    def cpuMove(self, depth=1):
         piecePos = self.x_pos if self.playing == 'X' else self.o_pos
         allPieceMoves = [(i, p+m)
                          for i,p in enumerate(piecePos)
@@ -294,14 +293,18 @@ class GameState:
                     for wallMove in allWallMoves
                     for pieceMove in allPieceMoves]
         minmax = max if self.playing == 'X' else min
-        states = [self.makeMove((self.playing, piece), pieceMove, wallMove, False)
-                  for (piece, pieceMove), wallMove in allMoves]
+        states = filter(None, (self.makeMove((self.playing, piece), pieceMove, wallMove, False)
+                               for (piece, pieceMove), wallMove in allMoves))
+        if depth == 0:
+            return minmax(states, key=(lambda s: s.score()))
+        else:
+            return minmax(states, key=(lambda s: s.cpuMove(depth-1).score()))
         #pp.pprint(allWallMoves)
         #pp.pprint(allPieceMoves)
         #pp.pprint(allMoves)
         #pp.pprint(states)
         #self.playing = self.human_player
-        return states
+        #return states
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
@@ -321,8 +324,11 @@ class GameState:
         closed_set = set()
         g = {start: 0}
         prev_nodes = {start: None}
+        #print("----START----")
         while len(open_set) > 0:
-            #node = min(open_set, key=(lambda n: g[n] + pythagora(n, end)))
+            #print(open_heap)
+            #print(open_set)
+            #print()
             _, node = heappop(open_heap)
 
             # Found end node
@@ -350,6 +356,8 @@ class GameState:
                     if m in closed_set:
                         closed_set.remove(m)
                         open_set.add(m)
+                        heappush(open_heap, (g[m] + pythagora(m, end), m))
+                        #print("AAAAAAAAA")
             open_set.remove(node)
             closed_set.add(node)
         return []

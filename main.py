@@ -6,5 +6,5 @@ from Game import makeGame, Game
 g = Game(5,5, (0,0), (1,1), (3,3), (4,4), 5, 'X')
 
 #[g.state.cpuMove() for x in range(100)]
-#g.state.cpuMove()
+z = g.state.cpuMove()
 #g.play()
