@@ -279,7 +279,7 @@ class GameState:
         return (min(pythagora(start, end) for start in self.o_pos for end in self.x_start) -
                 min(pythagora(start, end) for start in self.x_pos for end in self.o_start))
 
-    def cpuMove(self, depth=1):
+    def cpuMove(self, depth=2, limit=None):
         piecePos = self.x_pos if self.playing == 'X' else self.o_pos
         allPieceMoves = [(i, p+m)
                          for i,p in enumerate(piecePos)
@@ -293,18 +293,41 @@ class GameState:
                     for wallMove in allWallMoves
                     for pieceMove in allPieceMoves]
         minmax = max if self.playing == 'X' else min
+        minmaxPrev = min if self.playing == 'X' else max
+        worstScore = minmaxPrev(math.inf, -math.inf)
         states = filter(None, (self.makeMove((self.playing, piece), pieceMove, wallMove, False)
                                for (piece, pieceMove), wallMove in allMoves))
         if depth == 0:
-            return minmax(states, key=(lambda s: s.score()))
+            if limit == None:
+                return minmax(states, key=(lambda s: s.score()), default=None)
+            else:
+                bestScore = worstScore
+                bestState = None
+                for state in states:
+                    score = state.score()
+                    if minmaxPrev(limit, score) == limit:
+                        return None
+                    if minmax(bestScore, score) == score:
+                        bestScore = score
+                        bestState = state
+                return bestState
         else:
-            return minmax(states, key=(lambda s: s.cpuMove(depth-1).score()))
-        #pp.pprint(allWallMoves)
-        #pp.pprint(allPieceMoves)
-        #pp.pprint(allMoves)
-        #pp.pprint(states)
-        #self.playing = self.human_player
-        #return states
+            bestScore = worstScore
+            bestState = None
+            nextLimit = None # Can merge with bestScore?
+            for state in states:
+                bestChild = state.cpuMove(depth-1, nextLimit)
+                if bestChild == None:
+                    continue
+                score = bestChild.score()
+                if limit != None and minmaxPrev(limit, score) == limit:
+                    return None
+                if minmax(bestScore, score) == score:
+                    bestScore = score
+                    bestState = state
+                    nextLimit = score
+            return bestState
+            #return minmax(states, key=(lambda s: s.cpuMove(depth-1).score()))
 
     def isGameFinished(self):
         if any(x_piece in self.o_start for x_piece in self.x_pos):
@@ -324,11 +347,7 @@ class GameState:
         closed_set = set()
         g = {start: 0}
         prev_nodes = {start: None}
-        #print("----START----")
         while len(open_set) > 0:
-            #print(open_heap)
-            #print(open_set)
-            #print()
             _, node = heappop(open_heap)
 
             # Found end node
@@ -357,7 +376,6 @@ class GameState:
                         closed_set.remove(m)
                         open_set.add(m)
                         heappush(open_heap, (g[m] + pythagora(m, end), m))
-                        #print("AAAAAAAAA")
             open_set.remove(node)
             closed_set.add(node)
         return []
