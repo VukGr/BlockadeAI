@@ -1,10 +1,11 @@
 from collections import namedtuple
 from Config import *
 from functools import lru_cache
+from operator import add
 import math
 
 Point = namedtuple('Point', 'x y')
-Point.__add__ = lambda a, b: Point(a.x+b[0], a.y+b[1])  # type: ignore
+Point.__add__ = lru_cache(lambda a, b: Point(a.x+b[0], a.y+b[1]))  # type: ignore
 Point.__sub__ = lambda a, b: Point(a.x-b[0], a.y-b[1])  # type: ignore
 Point.__mul__ = lambda a, b: Point(a.x*b, a.y*b) #type: ignore
 Point.__floordiv__ = lambda a, b: Point(a.x//b, a.y//b) #type: ignore

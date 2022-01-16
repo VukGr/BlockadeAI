@@ -1,4 +1,5 @@
 from collections import deque
+from functools import cache
 from Util import Point, sign, pointToStr, prevToPath, pythagora
 from Config import *
 import math
@@ -12,6 +13,12 @@ pp = PrettyPrinter()
 straightMoves = {Point(+2,0),Point(-2,0),Point(0,+2),Point(0,-2)}
 diagonalMoves = {Point(+1,+1),Point(-1,+1),Point(-1,-1),Point(+1,-1)}
 halfMoves = {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
+
+@cache
+def getBestWallType(move):
+    return (({(0, 1, 'Z')} if move.x != 0 else set()) |
+            ({(1, 0, 'P')} if move.y != 0 else set()))
+[getBestWallType(move) for move in straightMoves | diagonalMoves | halfMoves]
 
 class GameNode:
     def __init__(self, pos, moves=[]):
@@ -55,18 +62,26 @@ class GameState:
         self.graph = [[GameNode(Point(x, y), genMoves(Point(x,y)))
                        for x in range(width)]
                       for y in range(height)]
+        self.calculatePaths()
+
+    def calculatePaths(self):
+        self.x_paths = [[self.pathfind(piece, end, False)
+                         for piece in self.x_pos]
+                        for end in self.o_start]
+        self.o_paths = [[self.pathfind(piece, end, False)
+                         for piece in self.o_pos]
+                        for end in self.x_start]
 
     def inBounds(self, pos):
         x, y = pos
         return x >= 0 and y >= 0 and x < self.width and y < self.height
 
     def isStateValid(self):
-        return all(len(self.pathfind(start, end, full=False)) != 0
-                   for start in (self.x_pos + self.o_pos)
-                   for end in (self.x_start + self.o_start)
-                   if start != end)
+        return all(len(path) != 0
+                   for piece in self.x_paths + self.o_paths
+                   for path in piece)
 
-    def isMoveValid(self, pos, move):
+    def isMoveValid(self, pos, move, withHalfMove=False):
         # start_* is pos_* minus one in case of negative numbers
         # So we can check left/upper walls instead of right/lower
         # ones respectively
@@ -104,11 +119,14 @@ class GameState:
         if (pos+move) in self.o_pos + self.x_pos:
             return False
 
-        if move in {(+2, 0), (-2, 0), (0, +2), (0, -2)}:
+        if move in straightMoves:
             return all([horizontalCheck(pos, dx),
                         verticalCheck(pos, dy)])
-        elif move in {(+1, +1), (-1, +1), (+1, -1), (-1, -1)}:
+        elif move in diagonalMoves:
             return diagonalCheck(pos, dx, dy)
+        elif withHalfMove and move in halfMoves:
+            return all([horizontalCheck(pos, dx),
+                        verticalCheck(pos, dy)])
         else:
             return False
 
@@ -153,6 +171,7 @@ class GameState:
                         invalidMoves = {move for move in diagonalMoves
                                         if not self.isMoveValid((x,y), move)}
                         self.graph[y][x].moves -= invalidMoves
+        # Not used anymore
         def isWallTouching(pos):
             if wallType == 'P':
                 if pos.x == 0 or pos.x == self.width-2:
@@ -174,7 +193,6 @@ class GameState:
         pos = Point(*pos)
         if not self.isWallValid(wallType, pos):
             return False
-        isntTouching = not isWallTouching(pos)
         # Horizontal
         if wallType == 'P':
             self.h_walls[pos.y].append(pos.x)
@@ -189,7 +207,9 @@ class GameState:
             self.v_walls[pos.y+1].sort()
             self.wall_cross_check.add(pos)
             vRemovePaths(pos)
-        if isntTouching or self.isStateValid():
+        # Recalculate paths
+        self.calculatePaths()
+        if self.isStateValid():
             return True
         else:
             return False
@@ -271,24 +291,29 @@ class GameState:
             return None
 
     def score(self):
-        # Placeholder
-        if any(piece in self.o_start for piece in self.x_pos):
-            return math.inf
-        if any(piece in self.x_start for piece in self.o_pos):
-            return -math.inf
-        return (min(pythagora(start, end) for start in self.o_pos for end in self.x_start) -
-                min(pythagora(start, end) for start in self.x_pos for end in self.o_start))
+        isDone = self.isGameFinished()
+        if isDone != 0:
+            return math.inf * isDone
 
-    def cpuMove(self, depth=2, limit=None):
-        piecePos = self.x_pos if self.playing == 'X' else self.o_pos
-        allPieceMoves = [(i, p+m)
-                         for i,p in enumerate(piecePos)
-                         for m in self.graph[p.y][p.x].moves]
-        allWallMoves = [(t, Point(x,y))
-                        for x in range(self.width)
-                        for y in range(self.height)
-                        for t in {'Z', 'P'}
-                        if self.isWallValid(t, Point(x,y))]
+        return (min(len(path) for path in self.o_paths) -
+                min(len(path) for path in self.x_paths))
+
+    def cpuMove(self, depth=5, limit=None):
+        if self.isGameFinished() != 0:
+            return self
+
+        piecePath = self.x_paths if self.playing == 'X' else self.o_paths
+        piecePathOpp = self.o_paths if self.playing == 'X' else self.x_paths
+        allPieceMoves = [(i, pos)
+                         for i,path in enumerate(piecePath)
+                         for pos in (p[1] for p in path)]
+        allWallMoves = {(t, Point(x,y))
+                        for piece in piecePathOpp
+                        for p in piece
+                        for (dx, dy, t) in getBestWallType(p[1]-p[0])
+                        for x in range(min(p[0].x, p[1].x) - dx, max(p[0].x, p[1].x) + dx)
+                        for y in range(min(p[0].y, p[1].y) - dy, max(p[0].y, p[1].y) + dy)
+                        if self.isWallValid(t, Point(x,y))}
         allMoves = [(pieceMove, wallMove)
                     for wallMove in allWallMoves
                     for pieceMove in allPieceMoves]
@@ -297,7 +322,7 @@ class GameState:
         worstScore = minmaxPrev(math.inf, -math.inf)
         states = filter(None, (self.makeMove((self.playing, piece), pieceMove, wallMove, False)
                                for (piece, pieceMove), wallMove in allMoves))
-        if depth == 0:
+        if depth == 1:
             if limit == None:
                 return minmax(states, key=(lambda s: s.score()), default=None)
             else:
@@ -339,6 +364,7 @@ class GameState:
         start = Point(*start)
         end = Point(*end)
         end_adjacents = {end+move for move in self.graph[end.y][end.x].moves}
+        #end_adjacents |= {end+move for move in halfMoves if self.isMoveValid(end, Point(0,0) - move)}
         open_set = set([start])
         open_heap = [(0, start)]
         closed_set = set()
@@ -352,6 +378,7 @@ class GameState:
                 if node == end:
                     return prevToPath(prev_nodes, end)
             elif node in end_adjacents:
+            #elif self.isMoveValid(node, node-end, True):
                 if end not in prev_nodes:
                     prev_nodes[end] = node
                 return prevToPath(prev_nodes, end)
