@@ -101,7 +101,12 @@ class Game:
         while not self.state.isGameFinished():
             self.draw()
             if cpu and self.state.playing != self.state.human_player: # type: ignore
-                self.state.cpuMove()
+                res = self.state.cpuMove()
+                if res != None:
+                    self.state = res
+                else:
+                    print("AI Error: No valid moves found")
+                    break
             else:
                 while True:
                     newState = self.state.makeMove(*self.parseMove())

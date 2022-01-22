@@ -5,7 +5,6 @@ from Config import *
 import math
 import pickle
 from heapq import heappush, heappop
-
 from pprint import PrettyPrinter
 
 pp = PrettyPrinter()
@@ -18,6 +17,7 @@ halfMoves = {Point(+1,0),Point(-1,0),Point(0,+1),Point(0,-1)}
 def getBestWallType(move):
     return (({(0, 1, 'Z')} if move.x != 0 else set()) |
             ({(1, 0, 'P')} if move.y != 0 else set()))
+# Ubaci sve u cache
 [getBestWallType(move) for move in straightMoves | diagonalMoves | halfMoves]
 
 class GameNode:
@@ -277,6 +277,9 @@ class GameState:
                     if printWarning:
                         print("Invalid wall placement.")
                     return False
+            else:
+                self.playing = 'O' if self.playing == 'X' else 'X'
+                return True
         else:
             if printWarning:
                 print("Invalid movement position")
@@ -293,12 +296,12 @@ class GameState:
     def score(self):
         isDone = self.isGameFinished()
         if isDone != 0:
-            return math.inf * isDone
+            return 999999 * isDone
 
         return (min(len(path) for path in self.o_paths) -
                 min(len(path) for path in self.x_paths))
 
-    def cpuMove(self, depth=5, limit=None):
+    def cpuMove(self, depth=2, limit=None):
         if self.isGameFinished() != 0:
             return self
 
@@ -307,13 +310,15 @@ class GameState:
         allPieceMoves = [(i, pos)
                          for i,path in enumerate(piecePath)
                          for pos in (p[1] for p in path)]
-        allWallMoves = {(t, Point(x,y))
-                        for piece in piecePathOpp
-                        for p in piece
-                        for (dx, dy, t) in getBestWallType(p[1]-p[0])
-                        for x in range(min(p[0].x, p[1].x) - dx, max(p[0].x, p[1].x) + dx)
-                        for y in range(min(p[0].y, p[1].y) - dy, max(p[0].y, p[1].y) + dy)
-                        if self.isWallValid(t, Point(x,y))}
+        allWallMoves = {('Z', Point(0,0))}
+        if self.wall_count > 0:
+            allWallMoves = {(t, Point(x,y))
+                            for piece in piecePathOpp
+                            for p in piece
+                            for (dx, dy, t) in getBestWallType(p[1]-p[0])
+                            for x in range(min(p[0].x, p[1].x) - dx, max(p[0].x, p[1].x) + dx)
+                            for y in range(min(p[0].y, p[1].y) - dy, max(p[0].y, p[1].y) + dy)
+                            if self.isWallValid(t, Point(x,y))}
         allMoves = [(pieceMove, wallMove)
                     for wallMove in allWallMoves
                     for pieceMove in allPieceMoves]
@@ -359,12 +364,11 @@ class GameState:
         return 0
 
     def pathfind(self, start, end, full=True):
-        # Maybe put into config?
         movement_cost = 1
         start = Point(*start)
         end = Point(*end)
         end_adjacents = {end+move for move in self.graph[end.y][end.x].moves}
-        #end_adjacents |= {end+move for move in halfMoves if self.isMoveValid(end, Point(0,0) - move)}
+        end_adjacents |= {end+move for move in halfMoves if self.isMoveValid(end, Point(0,0) - move)}
         open_set = set([start])
         open_heap = [(0, start)]
         closed_set = set()
@@ -378,7 +382,6 @@ class GameState:
                 if node == end:
                     return prevToPath(prev_nodes, end)
             elif node in end_adjacents:
-            #elif self.isMoveValid(node, node-end, True):
                 if end not in prev_nodes:
                     prev_nodes[end] = node
                 return prevToPath(prev_nodes, end)
