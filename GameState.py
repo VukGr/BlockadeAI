@@ -66,11 +66,11 @@ class GameState:
 
     def calculatePaths(self):
         self.x_paths = [[self.pathfind(piece, end, False)
-                         for piece in self.x_pos]
-                        for end in self.o_start]
+                         for end in self.o_start]
+                        for piece in self.x_pos]
         self.o_paths = [[self.pathfind(piece, end, False)
-                         for piece in self.o_pos]
-                        for end in self.x_start]
+                         for end in self.x_start]
+                        for piece in self.o_pos]
 
     def inBounds(self, pos):
         x, y = pos
@@ -119,14 +119,11 @@ class GameState:
         if (pos+move) in self.o_pos + self.x_pos:
             return False
 
-        if move in straightMoves:
-            return all([horizontalCheck(pos, dx),
-                        verticalCheck(pos, dy)])
+        if move in straightMoves or (withHalfMove and move in halfMoves):
+            return all(horizontalCheck(pos, dx),
+                       verticalCheck(pos, dy))
         elif move in diagonalMoves:
             return diagonalCheck(pos, dx, dy)
-        elif withHalfMove and move in halfMoves:
-            return all([horizontalCheck(pos, dx),
-                        verticalCheck(pos, dy)])
         else:
             return False
 
@@ -207,7 +204,6 @@ class GameState:
             self.v_walls[pos.y+1].sort()
             self.wall_cross_check.add(pos)
             vRemovePaths(pos)
-        # Recalculate paths
         self.calculatePaths()
         if self.isStateValid():
             return True
@@ -244,11 +240,12 @@ class GameState:
                 self.graph[n.y][n.x].moves.add(rel)
 
         player_pos = self.x_pos if self.playing == 'X' else self.o_pos
+        end_pos = self.o_start if self.playing == 'X' else self.x_start
         piece_pos = Point(*player_pos[piece])
         new_position = Point(*new_position)
         move = new_position - piece_pos
 
-        if move in self.graph[piece_pos.y][piece_pos.x].moves:
+        if move in self.graph[piece_pos.y][piece_pos.x].moves or (new_position in end_pos and self.isMoveValid(piece_pos, move, True)):
             fixPrevSpace(piece_pos)
             fixNewSpace(new_position)
             player_pos[piece] = new_position
@@ -279,6 +276,7 @@ class GameState:
                     return False
             else:
                 self.playing = 'O' if self.playing == 'X' else 'X'
+                self.calculatePaths()
                 return True
         else:
             if printWarning:
@@ -301,7 +299,7 @@ class GameState:
         return (min(len(path) for path in self.o_paths) -
                 min(len(path) for path in self.x_paths))
 
-    def cpuMove(self, depth=2, limit=None):
+    def cpuMove(self, depth=3, limit=None):
         if self.isGameFinished() != 0:
             return self
 
